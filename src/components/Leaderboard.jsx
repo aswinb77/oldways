@@ -36,8 +36,8 @@ export default function Leaderboard({ user, onOpenAuth }) {
             </div>
           </div>
           <p className="banner-desc">
-            Compete in 1v1 Quick Matchmaking and Online Friend duels! Logged-in players earn 
-            <strong> +25 pts</strong> per win to claim the weekly crown.
+            The Weekly Leaderboard is determined <strong>solely by 1v1 Online Matchmaking</strong> duels! Logged-in players earn 
+            <strong> +25 pts</strong> per online win (+5 pts dominance bonus) to climb the ladder.
           </p>
         </div>
       </div>
@@ -184,16 +184,8 @@ export default function Leaderboard({ user, onOpenAuth }) {
               <span className="rule-label">1v1 Online Matchmaking Win</span>
             </div>
             <div className="rule-card">
-              <span className="rule-pts">+15 pts</span>
-              <span className="rule-label">1v1 Friend Room Duel Win</span>
-            </div>
-            <div className="rule-card">
-              <span className="rule-pts">+10 pts</span>
-              <span className="rule-label">Defeating Insane IQ Bot</span>
-            </div>
-            <div className="rule-card">
               <span className="rule-pts">+5 pts</span>
-              <span className="rule-label">Dominance Bonus (40+ pt lead)</span>
+              <span className="rule-label">Dominance Bonus (40+ pt lead in Online Match)</span>
             </div>
           </div>
         </div>

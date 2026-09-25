@@ -119,14 +119,11 @@ export function recordMatchResult({ isWin, mode, scoreDiff = 0, currentUser }) {
     user.wins = (user.wins || 0) + 1
     user.streak = (user.streak || 0) + 1
 
-    // Leaderboard points are strictly awarded to logged-in players
-    if (!user.isGuest) {
-      let earned = 0
-      if (mode === 'matchmaking') earned = 25
-      else if (mode === 'friend') earned = 15
-      else if (mode === 'bot') earned = 10
+    // Weekly Leaderboard points are SOLELY awarded for 1v1 Online Matchmaking wins!
+    if (!user.isGuest && mode === 'matchmaking') {
+      let earned = 25
 
-      // bonus for large score margin
+      // Dominance bonus for 40+ point lead
       if (scoreDiff >= 40) earned += 5
 
       user.points = (user.points || 0) + earned

@@ -623,7 +623,7 @@ export default function PoojyamVettuBoard({
                 </div>
               </div>
 
-              {!currentUser.isGuest && gameResult.type === 'win' && (
+              {!currentUser.isGuest && mode === 'matchmaking' && gameResult.type === 'win' && (
                 <div className="leaderboard-earned-notice">
                   <Sparkles size={16} color="#D97706" />
                   <span>
