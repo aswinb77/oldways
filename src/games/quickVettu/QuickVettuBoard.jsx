@@ -202,16 +202,19 @@ export default function QuickVettuBoard({
 
       {/* Scoreboard */}
       <div className="creamy-card board-scoreboard-card">
-        <div className={`scoreboard-player p1-box ${curPlayer === 0 && !gameResult ? 'is-active-turn' : ''}`}>
+        <div className={`scoreboard-player p1-box ${curPlayer === 0 && !gameResult ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-avatar-badge">
             <img src={currentUser.avatar} alt="P1" className="player-img" />
             <img src="/assets/vettu-x-red.png" alt="X" className="piece-indicator-icon" />
+            {curPlayer === 0 && !gameResult && <span className="avatar-pulse-ring ring-red" />}
           </div>
           <div className="player-details">
-            <span className="player-title-name">{p1Name}</span>
+            <div className="player-title-row">
+              <span className="player-title-name">{p1Name}</span>
+              {curPlayer === 0 && !gameResult && <span className="turn-pulse-badge red-pulse">YOUR TURN</span>}
+            </div>
             <span className="piece-name">Red X</span>
           </div>
-          {curPlayer === 0 && !gameResult && <span className="turn-pulse-badge red-pulse">TURN</span>}
         </div>
 
         <div className="scoreboard-center">
@@ -219,18 +222,39 @@ export default function QuickVettuBoard({
           {tauntMsg && <div className="live-taunt-bubble">{tauntMsg}</div>}
         </div>
 
-        <div className={`scoreboard-player p2-box ${curPlayer === 1 && !gameResult ? 'is-active-turn' : ''}`}>
-          {curPlayer === 1 && !gameResult && <span className="turn-pulse-badge blue-pulse">TURN</span>}
+        <div className={`scoreboard-player p2-box ${curPlayer === 1 && !gameResult ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-details text-right">
-            <span className="player-title-name">{p2Name}</span>
+            <div className="player-title-row justify-end">
+              {curPlayer === 1 && !gameResult && (
+                <span className="turn-pulse-badge blue-pulse">
+                  {mode === 'bot' ? 'BOT TURN' : 'OPPONENT'}
+                </span>
+              )}
+              <span className="player-title-name">{p2Name}</span>
+            </div>
             <span className="piece-name">Blue X</span>
           </div>
           <div className="player-avatar-badge">
             <img src={mode === 'bot' ? '/assets/avatar-orange.png' : (opponentProfile?.avatar || '/assets/avatar-blue.png')} alt="P2" className="player-img" />
             <img src="/assets/vettu-x-blue.png" alt="O" className="piece-indicator-icon" />
+            {curPlayer === 1 && !gameResult && <span className="avatar-pulse-ring ring-blue" />}
           </div>
         </div>
       </div>
+
+      {/* Live Turn Banner */}
+      {!gameResult && (
+        <div className={`board-turn-banner ${curPlayer === 0 ? 'is-my-turn-banner' : 'is-opponent-turn-banner'}`}>
+          <span className="turn-banner-dot" />
+          <span className="turn-banner-text">
+            {curPlayer === 0
+              ? '👉 Your Turn — Place your Red X!'
+              : mode === 'bot'
+              ? '⏳ Bot is choosing a square...'
+              : `⏳ Waiting for ${p2Name}...`}
+          </span>
+        </div>
+      )}
 
       {/* 3x3 Board Arena */}
       <div className="creamy-card quick-board-card">

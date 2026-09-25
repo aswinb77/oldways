@@ -333,22 +333,25 @@ export default function PoojyamVettuBoard({
       {/* Scoreboard Bar */}
       <div className="creamy-card board-scoreboard-card">
         {/* Player 1 (Red X) */}
-        <div className={`scoreboard-player p1-box ${curPlayer === 0 ? 'is-active-turn' : ''}`}>
+        <div className={`scoreboard-player p1-box ${curPlayer === 0 ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-avatar-badge">
             <img src={p1Avatar} alt={p1Name} className="player-img" />
             <img src="/assets/vettu-x-red.png" alt="X" className="piece-indicator-icon" />
+            {curPlayer === 0 && <span className="avatar-pulse-ring ring-red" />}
           </div>
           <div className="player-details">
-            <span className="player-title-name">
-              {p1Name} {myPlayerIndex === 0 ? '(You)' : ''}
-            </span>
+            <div className="player-title-row">
+              <span className="player-title-name">
+                {p1Name} {myPlayerIndex === 0 ? '(You)' : ''}
+              </span>
+              {curPlayer === 0 && (
+                <span className="turn-pulse-badge red-pulse">
+                  {myPlayerIndex === 0 ? 'YOUR TURN' : 'TURN'}
+                </span>
+              )}
+            </div>
             <div className="score-counter p1-score">{scores[0]} pts</div>
           </div>
-          {curPlayer === 0 && (
-            <div className="turn-pulse-badge red-pulse">
-              <span>TURN</span>
-            </div>
-          )}
         </div>
 
         {/* Center Divider / Dots Left */}
@@ -371,24 +374,41 @@ export default function PoojyamVettuBoard({
         </div>
 
         {/* Player 2 (Blue X) */}
-        <div className={`scoreboard-player p2-box ${curPlayer === 1 ? 'is-active-turn' : ''}`}>
-          {curPlayer === 1 && (
-            <div className="turn-pulse-badge blue-pulse">
-              <span>TURN</span>
-            </div>
-          )}
+        <div className={`scoreboard-player p2-box ${curPlayer === 1 ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-details text-right">
-            <span className="player-title-name">
-              {p2Name} {myPlayerIndex === 1 ? '(You)' : ''}
-            </span>
+            <div className="player-title-row justify-end">
+              {curPlayer === 1 && (
+                <span className="turn-pulse-badge blue-pulse">
+                  {myPlayerIndex === 1 ? 'YOUR TURN' : mode === 'bot' ? 'BOT TURN' : 'TURN'}
+                </span>
+              )}
+              <span className="player-title-name">
+                {p2Name} {myPlayerIndex === 1 ? '(You)' : ''}
+              </span>
+            </div>
             <div className="score-counter p2-score">{scores[1]} pts</div>
           </div>
           <div className="player-avatar-badge">
             <img src={p2Avatar} alt={p2Name} className="player-img" />
             <img src="/assets/vettu-x-blue.png" alt="O" className="piece-indicator-icon" />
+            {curPlayer === 1 && <span className="avatar-pulse-ring ring-blue" />}
           </div>
         </div>
       </div>
+
+      {/* Live Turn Action Banner (Crystal-Clear Mobile Turn Notification) */}
+      {!gameResult && (
+        <div className={`board-turn-banner ${isMyTurn ? 'is-my-turn-banner' : 'is-opponent-turn-banner'}`}>
+          <span className="turn-banner-dot" />
+          <span className="turn-banner-text">
+            {isMyTurn
+              ? '👉 Your Turn — Tap an empty dot to claim it!'
+              : mode === 'bot'
+              ? '⏳ Bot is thinking...'
+              : `⏳ Waiting for ${curPlayer === 0 ? p1Name : p2Name} to play...`}
+          </span>
+        </div>
+      )}
 
       {/* Kerala School Notebook Paper Card Game Arena */}
       <div className="creamy-card board-canvas-card">

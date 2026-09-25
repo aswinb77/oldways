@@ -612,8 +612,113 @@
 }
 
 .scoreboard-player.is-active-turn {
-  background: var(--bg-creamy-subtle);
-  border-color: var(--border-creamy-dark);
+  background: #FFF;
+  transform: translateY(-1px);
+}
+
+.scoreboard-player.p1-box.is-active-turn {
+  border-color: #E04838;
+  box-shadow: 0 0 0 2px rgba(224, 72, 56, 0.25), 0 4px 10px rgba(224, 72, 56, 0.15);
+}
+
+.scoreboard-player.p2-box.is-active-turn {
+  border-color: #1D6AE5;
+  box-shadow: 0 0 0 2px rgba(29, 106, 229, 0.25), 0 4px 10px rgba(29, 106, 229, 0.15);
+}
+
+.scoreboard-player.is-inactive-turn {
+  opacity: 0.65;
+}
+
+.player-title-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.player-title-row.justify-end {
+  justify-content: flex-end;
+}
+
+/* Pulsing Avatar Ring */
+.avatar-pulse-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: avatarRingGlow 1.4s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.avatar-pulse-ring.ring-red {
+  border: 2.5px solid #E04838;
+}
+
+.avatar-pulse-ring.ring-blue {
+  border: 2.5px solid #1D6AE5;
+}
+
+@keyframes avatarRingGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.3;
+  }
+}
+
+/* Vibrant Turn Banner */
+.board-turn-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.board-turn-banner.is-my-turn-banner {
+  background: #ECFDF5;
+  border: 1.5px solid #10B981;
+  color: #065F46;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.board-turn-banner.is-opponent-turn-banner {
+  background: #F8FAFC;
+  border: 1.5px solid #CBD5E1;
+  color: #475569;
+}
+
+.turn-banner-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  animation: pulseDot 1s infinite alternate;
+}
+
+.is-my-turn-banner .turn-banner-dot {
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.is-opponent-turn-banner .turn-banner-dot {
+  background: #94A3B8;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.2); opacity: 1; }
 }
 
 .player-avatar-badge {
@@ -2764,7 +2869,10 @@
   }
 
   .turn-pulse-badge {
-    display: none;
+    display: inline-flex;
+    font-size: 0.62rem;
+    padding: 1px 5px;
+    letter-spacing: 0.03em;
   }
 
   /* Board Canvas Card: Maximum Touch Area */
