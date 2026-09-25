@@ -31,6 +31,9 @@ export default function QuickVettuBoard({
   const [gameResult, setGameResult] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
   const [tauntMsg, setTauntMsg] = useState(null)
+  const [pendingResetOutgoing, setPendingResetOutgoing] = useState(false)
+  const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
+  const [resetNotice, setResetNotice] = useState(null)
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -104,7 +107,17 @@ export default function QuickVettuBoard({
         executeMove(idx, player)
       }
     } else if (lastRemoteAction.type === 'QUICK_RESTART') {
-      resetGame()
+      resetGame(false)
+    } else if (lastRemoteAction.type === 'QUICK_RESET_REQUEST') {
+      setPendingResetIncoming({ requestedBy: lastRemoteAction.requestedBy || 'Opponent' })
+    } else if (lastRemoteAction.type === 'QUICK_RESET_ACCEPTED') {
+      setPendingResetOutgoing(false)
+      setPendingResetIncoming(null)
+      resetGame(false)
+    } else if (lastRemoteAction.type === 'QUICK_RESET_DECLINED') {
+      setPendingResetOutgoing(false)
+      setResetNotice('Opponent declined reset request.')
+      setTimeout(() => setResetNotice(null), 3500)
     } else if (lastRemoteAction.type === 'QUICK_STATE_SYNC') {
       if (lastRemoteAction.state) {
         if (lastRemoteAction.state.quickBoard) setBoard(lastRemoteAction.state.quickBoard)
@@ -132,15 +145,46 @@ export default function QuickVettuBoard({
     return () => clearTimeout(timer)
   }, [curPlayer, mode, board, gameResult, botDifficulty, executeMove])
 
-  const resetGame = () => {
+  const resetGame = (broadcast = true) => {
     setBoard(Array(9).fill(null))
     setCurPlayer(0)
     setWinningLine(null)
     setGameResult(null)
     setIsBotThinking(false)
+    setPendingResetOutgoing(false)
+    setPendingResetIncoming(null)
     if (roomCode) clearRoomState(roomCode)
-    if (mode !== 'bot' && onSendAction) {
+    if (broadcast && mode !== 'bot' && onSendAction) {
       onSendAction({ type: 'QUICK_RESTART' })
+    }
+  }
+
+  const handleResetClick = () => {
+    if (mode === 'friend' && !gameResult && !isOpponentDisconnected) {
+      setPendingResetOutgoing(true)
+      if (onSendAction) {
+        onSendAction({
+          type: 'QUICK_RESET_REQUEST',
+          requestedBy: currentUser.username,
+        })
+      }
+    } else {
+      resetGame(true)
+    }
+  }
+
+  const handleAcceptReset = () => {
+    setPendingResetIncoming(null)
+    resetGame(false)
+    if (onSendAction) {
+      onSendAction({ type: 'QUICK_RESET_ACCEPTED' })
+    }
+  }
+
+  const handleDeclineReset = () => {
+    setPendingResetIncoming(null)
+    if (onSendAction) {
+      onSendAction({ type: 'QUICK_RESET_DECLINED' })
     }
   }
 
@@ -215,12 +259,55 @@ export default function QuickVettuBoard({
           })}
         </div>
 
+        {/* Reset Notice if opponent declined */}
+        {resetNotice && (
+          <div className="reset-notice-pill">
+            <span>{resetNotice}</span>
+          </div>
+        )}
+
         <div className="board-controls-bar">
-          <button type="button" className="creamy-btn" onClick={resetGame}>
-            <RotateCcw size={16} />
-            <span>Restart Match</span>
+          <button
+            type="button"
+            className="creamy-btn"
+            onClick={handleResetClick}
+            disabled={pendingResetOutgoing}
+          >
+            <RotateCcw size={16} className={pendingResetOutgoing ? 'spin-anim' : ''} />
+            <span>
+              {pendingResetOutgoing ? 'Waiting for approval...' : 'Restart Match'}
+            </span>
           </button>
         </div>
+
+        {/* Mutual Reset Incoming Request Modal */}
+        {pendingResetIncoming && (
+          <div className="board-modal-overlay">
+            <div className="creamy-card reset-confirm-modal">
+              <div className="reset-confirm-badge">🔄</div>
+              <h3 className="reset-confirm-title">Reset Board Request</h3>
+              <p className="reset-confirm-desc">
+                <strong>{pendingResetIncoming.requestedBy}</strong> wants to reset the board. Do you agree?
+              </p>
+              <div className="reset-confirm-actions">
+                <button
+                  type="button"
+                  className="creamy-btn btn-primary"
+                  onClick={handleAcceptReset}
+                >
+                  Yes, Reset
+                </button>
+                <button
+                  type="button"
+                  className="creamy-btn"
+                  onClick={handleDeclineReset}
+                >
+                  No, Keep Playing
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal on game result */}
         {gameResult && (

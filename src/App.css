@@ -2246,6 +2246,90 @@
   animation: fadeIn 0.2s ease;
 }
 
+/* In-Game Minimal Navigation (Arrow Icon Only) */
+.in-game-minimal-nav {
+  background: rgba(251, 248, 242, 0.95);
+  border-bottom: 1.5px solid var(--border-creamy);
+  padding: 0.25rem 0;
+}
+
+.in-game-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.35rem 1.25rem;
+}
+
+.in-game-back-arrow {
+  padding: 0.45rem 0.8rem;
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: 0 3px 0 var(--border-creamy-dark);
+}
+
+.in-game-back-arrow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 var(--border-creamy-dark);
+}
+
+/* Reset Confirmation Modal & Notice */
+.reset-confirm-modal {
+  max-width: 360px;
+  width: 100%;
+  padding: 1.8rem 1.4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.reset-confirm-badge {
+  font-size: 2.2rem;
+}
+
+.reset-confirm-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.reset-confirm-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.reset-confirm-actions {
+  display: flex;
+  gap: 0.65rem;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.reset-confirm-actions button {
+  flex: 1;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.5rem;
+}
+
+.reset-notice-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #C2410C;
+  background: #FFF7ED;
+  border: 1px solid #FDBA74;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  animation: fadeIn 0.2s ease;
+}
+
 /* Guest Connecting Waiting Card */
 .guest-connecting-card {
   padding: 3rem 2rem;

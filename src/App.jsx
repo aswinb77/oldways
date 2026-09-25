@@ -275,18 +275,34 @@ export default function App() {
 
   return (
     <div className="game-app-root">
-      {/* Creamy Top Navigation */}
-      <Navbar
-        currentView={currentView}
-        setCurrentView={(view) => {
-          setCurrentView(view)
-          if (view !== 'arena') setInGame(false)
-        }}
-        user={user}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        isMuted={isMuted}
-        setIsMuted={setIsMuted}
-      />
+      {/* Top Navigation: Standard Navbar in Lobby; Single '<-' Arrow Icon Only When In Game */}
+      {inGame ? (
+        <header className="creamy-navbar-wrap in-game-minimal-nav">
+          <div className="creamy-navbar in-game-nav-inner">
+            <button
+              type="button"
+              className="creamy-btn in-game-back-arrow"
+              onClick={handleExitToLobby}
+              aria-label="Back to Lobby"
+              title="Back to Lobby"
+            >
+              <ArrowLeft size={22} />
+            </button>
+          </div>
+        </header>
+      ) : (
+        <Navbar
+          currentView={currentView}
+          setCurrentView={(view) => {
+            setCurrentView(view)
+            if (view !== 'arena') setInGame(false)
+          }}
+          user={user}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          isMuted={isMuted}
+          setIsMuted={setIsMuted}
+        />
+      )}
 
       <main className="app-container">
         {/* VIEW 1: ARENA (LOBBY OR ACTIVE 1V1 BOARD) */}
@@ -294,34 +310,7 @@ export default function App() {
           <>
             {inGame ? (
               <div className="active-game-session">
-                <div className="game-session-topbar">
-                  <button
-                    type="button"
-                    className="creamy-btn back-lobby-btn"
-                    onClick={handleExitToLobby}
-                  >
-                    <ArrowLeft size={17} />
-                    <span>Lobby</span>
-                  </button>
-
-                  <div className="session-mode-badge">
-                    <span className="mode-tag">
-                      {gameMode === 'bot'
-                        ? `Bot (${botDifficulty.toUpperCase()})`
-                        : gameMode === 'friend'
-                        ? `Room: ${roomCode}`
-                        : '1v1 Matchmaking'}
-                    </span>
-                    {!user.isGuest && (
-                      <span className="ranked-match-tag">
-                        <Sparkles size={13} color="#D97706" />
-                        Ranked
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Render Selected Board */}
+                {/* Render Selected Board Directly */}
                 {selectedGame === 'poojyam' ? (
                   <PoojyamVettuBoard
                     mode={gameMode}

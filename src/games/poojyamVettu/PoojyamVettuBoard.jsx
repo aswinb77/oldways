@@ -46,6 +46,9 @@ export default function PoojyamVettuBoard({
   const [lastMove, setLastMove] = useState(() => savedInitialState?.lastMove || null)
   const [tauntMsg, setTauntMsg] = useState(null)
   const [reconnectBanner, setReconnectBanner] = useState(false)
+  const [pendingResetOutgoing, setPendingResetOutgoing] = useState(false)
+  const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
+  const [resetNotice, setResetNotice] = useState(null)
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -198,7 +201,17 @@ export default function PoojyamVettuBoard({
         setTimeout(() => setReconnectBanner(false), 2500)
       }
     } else if (lastRemoteAction.type === 'RESTART') {
-      resetGame()
+      resetGame(false)
+    } else if (lastRemoteAction.type === 'RESET_REQUEST') {
+      setPendingResetIncoming({ requestedBy: lastRemoteAction.requestedBy || 'Opponent' })
+    } else if (lastRemoteAction.type === 'RESET_ACCEPTED') {
+      setPendingResetOutgoing(false)
+      setPendingResetIncoming(null)
+      resetGame(false)
+    } else if (lastRemoteAction.type === 'RESET_DECLINED') {
+      setPendingResetOutgoing(false)
+      setResetNotice('Opponent declined the reset request.')
+      setTimeout(() => setResetNotice(null), 3500)
     } else if (lastRemoteAction.type === 'TAUNT') {
       setTauntMsg(lastRemoteAction.text)
       setTimeout(() => setTauntMsg(null), 3000)
@@ -227,7 +240,7 @@ export default function PoojyamVettuBoard({
   }, [curPlayer, mode, grid, completedLineSet, botDifficulty, lastMove, placedCount, gameResult, executeMove])
 
   // Reset Game
-  const resetGame = () => {
+  const resetGame = (broadcast = true) => {
     setGrid(createEmptyGrid())
     setCurPlayer(0)
     setScores([0, 0])
@@ -235,9 +248,41 @@ export default function PoojyamVettuBoard({
     setGameResult(null)
     setLastMove(null)
     setIsBotThinking(false)
+    setPendingResetOutgoing(false)
+    setPendingResetIncoming(null)
     if (roomCode) clearRoomState(roomCode)
-    if (mode !== 'bot' && onSendAction) {
+    if (broadcast && mode !== 'bot' && onSendAction) {
       onSendAction({ type: 'RESTART' })
+    }
+  }
+
+  // Handle Reset Button Click with Mutual Approval
+  const handleResetClick = () => {
+    if (mode === 'friend' && !gameResult && !isOpponentDisconnected) {
+      setPendingResetOutgoing(true)
+      if (onSendAction) {
+        onSendAction({
+          type: 'RESET_REQUEST',
+          requestedBy: currentUser.username,
+        })
+      }
+    } else {
+      resetGame(true)
+    }
+  }
+
+  const handleAcceptReset = () => {
+    setPendingResetIncoming(null)
+    resetGame(false)
+    if (onSendAction) {
+      onSendAction({ type: 'RESET_ACCEPTED' })
+    }
+  }
+
+  const handleDeclineReset = () => {
+    setPendingResetIncoming(null)
+    if (onSendAction) {
+      onSendAction({ type: 'RESET_DECLINED' })
     }
   }
 
@@ -375,12 +420,6 @@ export default function PoojyamVettuBoard({
           </svg>
         </div>
 
-        {/* Board Title Header */}
-        <div className="canvas-header-title">
-          <h2 className="canvas-title">Poojyam Vettu</h2>
-          <span className="canvas-malayalam">പൂജ്യം വെട്ട് കളിക്കുന്നോ ?</span>
-        </div>
-
         {/* 55-Dot Triangular SVG Canvas with Mobile-Optimized Touch Hitboxes */}
         <div className="svg-container-wrap">
           <svg
@@ -502,13 +541,59 @@ export default function PoojyamVettuBoard({
           ))}
         </div>
 
+        {/* Reset Notice if opponent declined */}
+        {resetNotice && (
+          <div className="reset-notice-pill">
+            <AlertCircle size={15} />
+            <span>{resetNotice}</span>
+          </div>
+        )}
+
         {/* Controls Footer */}
         <div className="board-controls-bar">
-          <button type="button" className="creamy-btn" onClick={resetGame}>
-            <RotateCcw size={16} />
-            <span>Reset Board</span>
+          <button
+            type="button"
+            className="creamy-btn"
+            onClick={handleResetClick}
+            disabled={pendingResetOutgoing}
+          >
+            <RotateCcw size={16} className={pendingResetOutgoing ? 'spin-anim' : ''} />
+            <span>
+              {pendingResetOutgoing
+                ? 'Waiting for approval...'
+                : 'Reset Board'}
+            </span>
           </button>
         </div>
+
+        {/* Mutual Reset Incoming Request Modal */}
+        {pendingResetIncoming && (
+          <div className="board-modal-overlay">
+            <div className="creamy-card reset-confirm-modal">
+              <div className="reset-confirm-badge">🔄</div>
+              <h3 className="reset-confirm-title">Reset Board Request</h3>
+              <p className="reset-confirm-desc">
+                <strong>{pendingResetIncoming.requestedBy}</strong> wants to reset the board. Do you agree?
+              </p>
+              <div className="reset-confirm-actions">
+                <button
+                  type="button"
+                  className="creamy-btn btn-primary"
+                  onClick={handleAcceptReset}
+                >
+                  Yes, Reset
+                </button>
+                <button
+                  type="button"
+                  className="creamy-btn"
+                  onClick={handleDeclineReset}
+                >
+                  No, Keep Playing
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* End Game Modal Overlay */}
         {gameResult && (
