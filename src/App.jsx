@@ -88,6 +88,8 @@ export default function App() {
       // If user was host of this room, resume as host
       if (savedRole === 'host') {
         resumeHostRoom(targetCode)
+      } else if (savedRole === 'guest') {
+        resumeGuestRoom(targetCode)
       } else {
         // Friend opening the link: ask for name & avatar
         setPendingJoinRoomCode(targetCode)
@@ -114,6 +116,24 @@ export default function App() {
     }
 
     initMultiplayerHost(code, user)
+  }
+
+  // Resume Guest Room upon reload
+  const resumeGuestRoom = (code) => {
+    destroyMultiplayer()
+    setRoomCode(code)
+    setIsHost(false)
+    setGameMode('friend')
+
+    const savedState = loadRoomState(code)
+    if (savedState) {
+      setInGame(true)
+      setIsOpponentDisconnected(true)
+    } else {
+      setIsConnectingGuest(true)
+    }
+
+    initMultiplayerGuest(code, user)
   }
 
   // Handle remote notification when opponent leaves and closes room
@@ -240,6 +260,13 @@ export default function App() {
     setIsMpModalOpen(true)
     setIsOpponentDisconnected(false)
 
+    // Ensure host browser is on the corresponding room URL and role is remembered
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`pv_room_role_${code}`, 'host')
+      const newUrl = `${window.location.pathname}?room=${code}`
+      window.history.replaceState({ room: code, role: 'host' }, document.title, newUrl)
+    }
+
     initMultiplayerHost(code, user)
   }
 
@@ -254,6 +281,11 @@ export default function App() {
     setUser(friendUser)
     setIsJoinRoomModalOpen(false)
     if (pendingJoinRoomCode) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`pv_room_role_${pendingJoinRoomCode}`, 'guest')
+        const newUrl = `${window.location.pathname}?room=${pendingJoinRoomCode}`
+        window.history.replaceState({ room: pendingJoinRoomCode, role: 'guest' }, document.title, newUrl)
+      }
       initMultiplayerGuest(pendingJoinRoomCode, friendUser)
     }
   }
@@ -499,10 +531,7 @@ export default function App() {
       {/* Multiplayer Waiting & Matchmaking Modal (Host) */}
       <MultiplayerModal
         isOpen={isMpModalOpen}
-        onClose={() => {
-          setIsMpModalOpen(false)
-          destroyMultiplayer()
-        }}
+        onClose={handleExitToLobby}
         type={mpModalType}
         roomCode={roomCode}
         queueStatus={queueStatus}
