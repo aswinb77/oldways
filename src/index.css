@@ -53,6 +53,25 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow-x: clip) {
+  html, body {
+    overflow-x: hidden;
+  }
+}
+
+#root, .game-app-root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg-creamy-main);
@@ -238,8 +257,10 @@ input, select {
 /* Responsive container */
 .app-container {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 1rem 1.25rem 4rem 1.25rem;
+  box-sizing: border-box;
 }
 
 /* Animations */
