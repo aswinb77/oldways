@@ -8,6 +8,7 @@ export default function MultiplayerModal({
   type, // 'create_room' | 'matchmaking'
   roomCode,
   onStartSimulatedMatch,
+  queueStatus,
 }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
@@ -128,9 +129,11 @@ export default function MultiplayerModal({
               </div>
             </div>
 
-            <h2 className="mp-modal-title">Finding Online Challenger...</h2>
+            <h2 className="mp-modal-title">
+              {queueStatus?.state === 'waiting_host' ? 'Waiting in Queue...' : 'Finding Online Challenger...'}
+            </h2>
             <p className="mp-modal-sub">
-              Matching you with an available 1v1 player across the network
+              {queueStatus?.message || 'Matching you with an available 1v1 player across the network'}
             </p>
 
             <div className="match-stats-row">
@@ -143,12 +146,12 @@ export default function MultiplayerModal({
                 <span className="m-lbl">Network Ping</span>
               </div>
               <div className="m-stat">
-                <span className="m-val">12</span>
-                <span className="m-lbl">Active Queue</span>
+                <span className="m-val">{queueStatus?.queuePos ? `#${queueStatus.queuePos}` : 'FCFS'}</span>
+                <span className="m-lbl">Queue Status</span>
               </div>
             </div>
 
-            {searchTimer >= 4 && (
+            {searchTimer >= 8 && (
               <div className="instant-challenger-prompt">
                 <p>No immediate peer? Match with an active challenger now:</p>
                 <button

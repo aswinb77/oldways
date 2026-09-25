@@ -9,6 +9,7 @@ import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
 import { loadUser, recordMatchResult, loadRoomState, clearRoomState } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
+import { FCFSMatchmaker } from './utils/fcfsMatchmaker'
 import { sounds } from './utils/audio'
 import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react'
 import './App.css'
@@ -27,7 +28,9 @@ export default function App() {
   const [lastRemoteAction, setLastRemoteAction] = useState(null)
   const [isOpponentDisconnected, setIsOpponentDisconnected] = useState(false)
   const [isConnectingGuest, setIsConnectingGuest] = useState(false)
+  const [queueStatus, setQueueStatus] = useState(null)
   const mpRoomRef = useRef(null)
+  const fcfsMatchmakerRef = useRef(null)
 
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -42,10 +45,15 @@ export default function App() {
 
   // Clean up multiplayer room when leaving game
   const destroyMultiplayer = () => {
+    if (fcfsMatchmakerRef.current) {
+      fcfsMatchmakerRef.current.destroy()
+      fcfsMatchmakerRef.current = null
+    }
     if (mpRoomRef.current) {
       mpRoomRef.current.destroy()
       mpRoomRef.current = null
     }
+    setQueueStatus(null)
   }
 
   // Check URL query parameters for invite links on mount
@@ -195,34 +203,46 @@ export default function App() {
     }
   }
 
-  // Start 1v1 Quick Matchmaking
+  // Start 1v1 Quick Matchmaking with First-Come-First-Served (FCFS) Queue
   const handleStartMatchmaking = () => {
     destroyMultiplayer()
-    const publicMatchCode = `MATCH-${Math.floor(100 + Math.random() * 900)}`
-    setRoomCode(publicMatchCode)
-    setIsHost(true)
     setGameMode('matchmaking')
     setMpModalType('matchmaking')
     setIsMpModalOpen(true)
     setIsOpponentDisconnected(false)
+    setQueueStatus({ state: 'searching', message: 'Entering global matchmaking queue...' })
 
-    mpRoomRef.current = new MultiplayerRoom({
-      roomCode: publicMatchCode,
-      isHost: true,
-      playerProfile: user,
-      onMessage: (msg) => {
-        setLastRemoteAction(msg)
+    fcfsMatchmakerRef.current = new FCFSMatchmaker({
+      user,
+      onStatusUpdate: (status) => {
+        setQueueStatus(status)
       },
-      onStatusChange: ({ status, remoteProfile }) => {
-        if (status === 'connected') {
-          sounds.playMatchFound()
-          setIsOpponentDisconnected(false)
-          setOpponentProfile(remoteProfile || { username: 'Live Player', avatar: '/assets/avatar-purple.png' })
-          setIsMpModalOpen(false)
-          setInGame(true)
-        } else if (status === 'disconnected') {
-          setIsOpponentDisconnected(true)
-        }
+      onMatchFound: ({ roomCode: privateRoomCode, isHost: roleIsHost, opponentProfile: oppProfile }) => {
+        sounds.playMatchFound()
+        setRoomCode(privateRoomCode)
+        setIsHost(roleIsHost)
+        setOpponentProfile(oppProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
+        setIsMpModalOpen(false)
+        setInGame(true)
+
+        // Connect both players into their private 1v1 duel room
+        mpRoomRef.current = new MultiplayerRoom({
+          roomCode: privateRoomCode,
+          isHost: roleIsHost,
+          playerProfile: user,
+          onMessage: (msg) => {
+            setLastRemoteAction(msg)
+          },
+          onStatusChange: ({ status, remoteProfile }) => {
+            if (status === 'connected') {
+              sounds.playMatchFound()
+              setIsOpponentDisconnected(false)
+              if (remoteProfile) setOpponentProfile(remoteProfile)
+            } else if (status === 'disconnected') {
+              setIsOpponentDisconnected(true)
+            }
+          },
+        })
       },
     })
   }
@@ -398,6 +418,7 @@ export default function App() {
         }}
         type={mpModalType}
         roomCode={roomCode}
+        queueStatus={queueStatus}
         onStartSimulatedMatch={handleStartSimulatedMatch}
       />
 
