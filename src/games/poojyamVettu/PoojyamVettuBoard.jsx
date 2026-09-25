@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle } from 'lucide-react'
+import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle, Play, RefreshCw } from 'lucide-react'
 import {
   N,
   TOTAL_DOTS,
@@ -49,9 +49,22 @@ export default function PoojyamVettuBoard({
   const [pendingResetOutgoing, setPendingResetOutgoing] = useState(false)
   const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
   const [resetNotice, setResetNotice] = useState(null)
+  const [showRejoinChoice, setShowRejoinChoice] = useState(false)
+  const prevDisconnectedRef = useRef(isOpponentDisconnected)
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
+
+  // Detect when opponent reconnects/rejoins after being disconnected
+  useEffect(() => {
+    if (mode === 'friend' && prevDisconnectedRef.current && !isOpponentDisconnected) {
+      setShowRejoinChoice(true)
+      if (onSendAction) {
+        onSendAction({ type: 'SHOW_REJOIN_CHOICE' })
+      }
+    }
+    prevDisconnectedRef.current = isOpponentDisconnected
+  }, [isOpponentDisconnected, mode, onSendAction])
 
   // When room reconnects, if we are host, broadcast our state to ensure guest has exact board
   useEffect(() => {
@@ -213,6 +226,21 @@ export default function PoojyamVettuBoard({
       setPendingResetOutgoing(false)
       setResetNotice('Opponent declined the reset request.')
       setTimeout(() => setResetNotice(null), 3500)
+    } else if (lastRemoteAction.type === 'SHOW_REJOIN_CHOICE') {
+      setShowRejoinChoice(true)
+    } else if (lastRemoteAction.type === 'REJOIN_CHOICE_RESUME') {
+      setShowRejoinChoice(false)
+      setReconnectBanner(true)
+      setTimeout(() => setReconnectBanner(false), 2500)
+      if (isHost && onSendAction) {
+        onSendAction({
+          type: 'STATE_SYNC',
+          state: { grid, scores, completedLines, curPlayer, lastMove },
+        })
+      }
+    } else if (lastRemoteAction.type === 'REJOIN_CHOICE_RESTART') {
+      setShowRejoinChoice(false)
+      resetGame(false)
     } else if (lastRemoteAction.type === 'TAUNT') {
       setTauntMsg(lastRemoteAction.text)
       setTimeout(() => setTauntMsg(null), 3000)
@@ -287,6 +315,30 @@ export default function PoojyamVettuBoard({
     }
   }
 
+  // Rejoin Choice Handlers
+  const handleChooseResume = () => {
+    setShowRejoinChoice(false)
+    setReconnectBanner(true)
+    setTimeout(() => setReconnectBanner(false), 2500)
+    if (onSendAction) {
+      onSendAction({ type: 'REJOIN_CHOICE_RESUME' })
+      if (isHost) {
+        onSendAction({
+          type: 'STATE_SYNC',
+          state: { grid, scores, completedLines, curPlayer, lastMove },
+        })
+      }
+    }
+  }
+
+  const handleChooseRestart = () => {
+    setShowRejoinChoice(false)
+    resetGame(true)
+    if (onSendAction) {
+      onSendAction({ type: 'REJOIN_CHOICE_RESTART' })
+    }
+  }
+
   // Send Taunt
   const handleSendTaunt = (msg) => {
     setTauntMsg(msg)
@@ -313,13 +365,20 @@ export default function PoojyamVettuBoard({
 
   return (
     <div className="poojyam-board-wrapper">
-      {/* Opponent Disconnected / Reconnect Banner */}
+      {/* Opponent Disconnected / Connection Error Waiting Banner */}
       {isOpponentDisconnected && (
-        <div className="reconnect-alert-banner">
-          <WifiOff size={18} className="spin-slow" />
-          <span>
-            <strong>Friend temporarily disconnected.</strong> Game is paused — it will automatically resume as soon as they re-open the room link!
-          </span>
+        <div className="reconnect-alert-banner connection-waiting-banner">
+          <div className="conn-spin-wrap">
+            <RefreshCw size={22} className="spin-slow" />
+          </div>
+          <div className="conn-text-wrap">
+            <div className="conn-main-title">
+              Connection Error: Friend Disconnected
+            </div>
+            <div className="conn-sub-desc">
+              Game is paused. As soon as your friend re-opens the link or reconnects, you will get the choice to resume or start over!
+            </div>
+          </div>
         </div>
       )}
 
@@ -570,6 +629,37 @@ export default function PoojyamVettuBoard({
                   onClick={handleDeclineReset}
                 >
                   No, Keep Playing
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Friend Rejoined: Choice to Resume or Start Over Modal */}
+        {showRejoinChoice && (
+          <div className="board-modal-overlay">
+            <div className="creamy-card reset-confirm-modal rejoin-choice-modal">
+              <div className="reset-confirm-badge">🎉</div>
+              <h3 className="reset-confirm-title">Friend Rejoined!</h3>
+              <p className="reset-confirm-desc">
+                Your friend is back in the game room! Would you like to resume your ongoing game or start over?
+              </p>
+              <div className="rejoin-choice-actions">
+                <button
+                  type="button"
+                  className="creamy-btn btn-primary rejoin-btn-resume"
+                  onClick={handleChooseResume}
+                >
+                  <Play size={18} />
+                  <span>Resume Current Game</span>
+                </button>
+                <button
+                  type="button"
+                  className="creamy-btn rejoin-btn-restart"
+                  onClick={handleChooseRestart}
+                >
+                  <RotateCcw size={18} />
+                  <span>Start Over (New Game)</span>
                 </button>
               </div>
             </div>

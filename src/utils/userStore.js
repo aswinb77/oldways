@@ -94,11 +94,32 @@ export function loadRoomState(roomCode) {
   }
 }
 
+export function saveRoomRole(roomCode, role) {
+  if (typeof window === 'undefined' || !roomCode) return
+  try {
+    const code = roomCode.trim().toUpperCase()
+    sessionStorage.setItem(`pv_room_role_${code}`, role)
+    localStorage.setItem(`pv_room_role_${code}`, role)
+  } catch (e) {}
+}
+
+export function getRoomRole(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return null
+  try {
+    const code = roomCode.trim().toUpperCase()
+    return sessionStorage.getItem(`pv_room_role_${code}`) || localStorage.getItem(`pv_room_role_${code}`)
+  } catch (e) {
+    return null
+  }
+}
+
 export function clearRoomState(roomCode) {
   if (typeof window === 'undefined' || !roomCode) return
   try {
-    localStorage.removeItem(`pv_room_state_${roomCode}`)
-    sessionStorage.removeItem(`pv_room_role_${roomCode}`)
+    const code = roomCode.trim().toUpperCase()
+    localStorage.removeItem(`pv_room_state_${code}`)
+    sessionStorage.removeItem(`pv_room_role_${code}`)
+    localStorage.removeItem(`pv_room_role_${code}`)
   } catch (e) {}
 }
 
@@ -110,8 +131,7 @@ export function markRoomClosed(roomCode) {
     const closed = raw ? JSON.parse(raw) : {}
     closed[code] = Date.now()
     localStorage.setItem('pv_closed_rooms', JSON.stringify(closed))
-    localStorage.removeItem(`pv_room_state_${code}`)
-    sessionStorage.removeItem(`pv_room_role_${code}`)
+    clearRoomState(code)
   } catch (e) {}
 }
 
