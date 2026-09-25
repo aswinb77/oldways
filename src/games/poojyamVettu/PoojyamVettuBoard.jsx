@@ -397,35 +397,6 @@ export default function PoojyamVettuBoard({
 
       {/* Kerala School Notebook Paper Card Game Arena */}
       <div className="creamy-card board-canvas-card">
-        {/* Paperclip Nostalgia Badge */}
-        <div className="paperclip-visual" aria-hidden="true">
-          <svg viewBox="0 0 28 68" width="20" height="50" fill="none">
-            <defs>
-              <linearGradient id="clip-steel" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#d1d5db" />
-                <stop offset="40%" stopColor="#ffffff" />
-                <stop offset="70%" stopColor="#9ca3af" />
-                <stop offset="100%" stopColor="#d1d5db" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M9 16v34a5 5 0 0 0 10 0V12a8 8 0 0 0-16 0v40a10 10 0 0 0 20 0V18"
-              stroke="rgba(60, 40, 25, 0.25)"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              transform="translate(1.5, 2)"
-            />
-            <path
-              d="M9 16v34a5 5 0 0 0 10 0V12a8 8 0 0 0-16 0v40a10 10 0 0 0 20 0V18"
-              stroke="url(#clip-steel)"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
         {/* 55-Dot Triangular SVG Canvas with Mobile-Optimized Touch Hitboxes */}
         <div className="svg-container-wrap">
           <svg

@@ -823,13 +823,6 @@
   box-shadow: var(--shadow-lg);
 }
 
-.paperclip-visual {
-  position: absolute;
-  top: -16px;
-  left: 36px;
-  z-index: 5;
-}
-
 .canvas-header-title {
   text-align: center;
   margin-bottom: 0.8rem;
@@ -2937,11 +2930,6 @@
     max-width: 100%;
     box-sizing: border-box;
     overflow: hidden;
-  }
-
-  .paperclip-visual {
-    left: 12px;
-    top: -12px;
   }
 
   .canvas-title {
