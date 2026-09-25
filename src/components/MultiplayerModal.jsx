@@ -1,0 +1,169 @@
+import React, { useState, useEffect } from 'react'
+import { X, Copy, Check, Share2, Users, Radar, Sparkles, MessageCircle, Bot } from 'lucide-react'
+import { sounds } from '../utils/audio'
+
+export default function MultiplayerModal({
+  isOpen,
+  onClose,
+  type, // 'create_room' | 'matchmaking'
+  roomCode,
+  onStartSimulatedMatch,
+}) {
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedCode, setCopiedCode] = useState(false)
+  const [searchTimer, setSearchTimer] = useState(0)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTimer(0)
+      return
+    }
+    const timer = setInterval(() => {
+      setSearchTimer((t) => t + 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const inviteUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?room=${roomCode}`
+    : `https://game.dev/?room=${roomCode}`
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(inviteUrl)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2000)
+  }
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(roomCode)
+    setCopiedCode(true)
+    setTimeout(() => setCopiedCode(false), 2000)
+  }
+
+  const handleWhatsAppShare = () => {
+    const text = encodeURIComponent(`Let's play 1v1 Poojyam Vettu! Click here to join my room: ${inviteUrl} (Code: ${roomCode})`)
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
+  }
+
+  return (
+    <div className="creamy-modal-overlay" onClick={onClose}>
+      <div className="creamy-modal-content mp-modal-box" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="modal-close-btn" onClick={onClose}>
+          <X size={20} />
+        </button>
+
+        {type === 'create_room' ? (
+          <div className="room-create-body">
+            <div className="mp-icon-badge blue-pulse">
+              <Users size={32} color="#2563EB" />
+            </div>
+
+            <h2 className="mp-modal-title">1v1 Friend Room Created</h2>
+            <p className="mp-modal-sub">
+              Share this room code or direct link with your friend to start playing together!
+            </p>
+
+            {/* Room Code Display */}
+            <div className="room-code-display-card">
+              <span className="code-label">ROOM CODE</span>
+              <div className="code-value-row">
+                <span className="code-text">{roomCode}</span>
+                <button
+                  type="button"
+                  className="code-copy-btn"
+                  onClick={handleCopyCode}
+                  title="Copy Code"
+                >
+                  {copiedCode ? <Check size={18} color="#16A34A" /> : <Copy size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Direct Link Share */}
+            <div className="invite-link-box">
+              <input
+                type="text"
+                readOnly
+                value={inviteUrl}
+                className="creamy-input invite-input"
+              />
+              <button
+                type="button"
+                className="creamy-btn btn-blue copy-link-btn"
+                onClick={handleCopyLink}
+              >
+                {copiedLink ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
+              </button>
+            </div>
+
+            {/* Social Share Buttons */}
+            <div className="social-share-strip">
+              <button
+                type="button"
+                className="creamy-btn whatsapp-btn"
+                onClick={handleWhatsAppShare}
+              >
+                <MessageCircle size={18} />
+                <span>Share via WhatsApp</span>
+              </button>
+            </div>
+
+            {/* Waiting Pulse */}
+            <div className="waiting-status-wrap">
+              <div className="waiting-spinner" />
+              <span>Waiting for your friend to enter the room...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="matchmaking-body">
+            <div className="radar-animation-box">
+              <div className="radar-circle rc-1" />
+              <div className="radar-circle rc-2" />
+              <div className="radar-circle rc-3" />
+              <div className="radar-center-dot">
+                <Zap size={28} color="#FFF" />
+              </div>
+            </div>
+
+            <h2 className="mp-modal-title">Finding Online Challenger...</h2>
+            <p className="mp-modal-sub">
+              Matching you with an available 1v1 player across the network
+            </p>
+
+            <div className="match-stats-row">
+              <div className="m-stat">
+                <span className="m-val">{searchTimer}s</span>
+                <span className="m-lbl">Searching</span>
+              </div>
+              <div className="m-stat">
+                <span className="m-val">24ms</span>
+                <span className="m-lbl">Network Ping</span>
+              </div>
+              <div className="m-stat">
+                <span className="m-val">12</span>
+                <span className="m-lbl">Active Queue</span>
+              </div>
+            </div>
+
+            {searchTimer >= 4 && (
+              <div className="instant-challenger-prompt">
+                <p>No immediate peer? Match with an active challenger now:</p>
+                <button
+                  type="button"
+                  className="creamy-btn btn-primary instant-match-btn"
+                  onClick={onStartSimulatedMatch}
+                >
+                  <Bot size={18} />
+                  <span>Duel Live Ranked Challenger (Sneha_Thrissur)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

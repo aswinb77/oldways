@@ -1,0 +1,258 @@
+/* ==========================================================================
+   Poojyam Vettu - Creamy Aesthetic Design System
+   ========================================================================== */
+
+:root {
+  /* Creamy Palette Tokens */
+  --bg-creamy-main: #FBF8F2;
+  --bg-creamy-subtle: #F5EFE6;
+  --bg-card: #FFFCF7;
+  --bg-card-hover: #FFFDF9;
+  --bg-card-active: #F7EFE2;
+
+  --border-creamy: #EADBCE;
+  --border-creamy-dark: #D8C8B8;
+  --border-dashed: #DFD2C2;
+
+  /* Typography Colors */
+  --text-main: #33261D;
+  --text-muted: #7A695B;
+  --text-light: #A8988B;
+
+  /* Game Accents */
+  --red-accent: #E04838;
+  --red-accent-light: #FDE8E6;
+  --red-shadow: #B52F21;
+
+  --blue-accent: #1D6AE5;
+  --blue-accent-light: #EBF3FF;
+  --blue-shadow: #124DB0;
+
+  --gold-accent: #E69D00;
+  --gold-accent-light: #FEF7E6;
+  --emerald-accent: #1B8354;
+  --emerald-light: #E8F6EF;
+
+  /* Tactile Shadows */
+  --shadow-sm: 0 2px 4px rgba(71, 52, 38, 0.05);
+  --shadow-md: 0 6px 18px rgba(71, 52, 38, 0.07), 0 2px 6px rgba(71, 52, 38, 0.04);
+  --shadow-lg: 0 16px 36px rgba(71, 52, 38, 0.1), 0 4px 12px rgba(71, 52, 38, 0.05);
+  --shadow-tactile: 0 5px 0 var(--border-creamy-dark);
+  --shadow-tactile-red: 0 4px 0 var(--red-shadow);
+  --shadow-tactile-blue: 0 4px 0 var(--blue-shadow);
+
+  /* Fonts */
+  --font-heading: 'Baloo 2', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-alt: 'Outfit', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-creamy-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Subtle Warm Kerala Notebook Ruled Grid Pattern */
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(224, 72, 56, 0.02) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(29, 106, 229, 0.02) 0%, transparent 20%),
+    linear-gradient(to right, rgba(216, 200, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(216, 200, 184, 0.12) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  user-select: none;
+}
+
+input, select {
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   Tactile & Creamy UI Utilities
+   ========================================================================== */
+
+.creamy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.75rem 1.4rem;
+  border-radius: 14px;
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 2px solid var(--border-creamy);
+  box-shadow: 0 4px 0 var(--border-creamy-dark), var(--shadow-sm);
+  transition: all 0.12s ease-in-out;
+}
+
+.creamy-btn:hover {
+  background-color: #FFFFFF;
+  border-color: #D3C1AF;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--border-creamy-dark), var(--shadow-md);
+}
+
+.creamy-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--border-creamy-dark);
+}
+
+.creamy-btn.btn-primary {
+  background-color: #E25B45;
+  color: #FFFFFF;
+  border-color: #C74530;
+  box-shadow: 0 4px 0 #9E2F1D, var(--shadow-sm);
+}
+
+.creamy-btn.btn-primary:hover {
+  background-color: #E86A55;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #9E2F1D, var(--shadow-md);
+}
+
+.creamy-btn.btn-primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #9E2F1D;
+}
+
+.creamy-btn.btn-blue {
+  background-color: #2563EB;
+  color: #FFFFFF;
+  border-color: #1D4ED8;
+  box-shadow: 0 4px 0 #1E40AF, var(--shadow-sm);
+}
+
+.creamy-btn.btn-blue:hover {
+  background-color: #3B82F6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #1E40AF, var(--shadow-md);
+}
+
+.creamy-btn.btn-blue:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #1E40AF;
+}
+
+.creamy-btn.btn-gold {
+  background-color: #F59E0B;
+  color: #FFFFFF;
+  border-color: #D97706;
+  box-shadow: 0 4px 0 #B45309, var(--shadow-sm);
+}
+
+.creamy-btn.btn-gold:hover {
+  background-color: #FBBF24;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #B45309, var(--shadow-md);
+}
+
+.creamy-btn.btn-gold:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #B45309;
+}
+
+.creamy-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-creamy);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+/* Notebook Paper Style Accent */
+.creamy-notebook-header {
+  border-bottom: 2px dashed var(--border-dashed);
+  padding-bottom: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+/* Glassy Pill */
+.creamy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background-color: var(--bg-creamy-subtle);
+  border: 1.5px solid var(--border-creamy);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Modal Overlay */
+.creamy-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 33, 24, 0.45);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.creamy-modal-content {
+  background: var(--bg-card);
+  border: 2px solid var(--border-creamy);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
+  max-width: 520px;
+  width: 100%;
+  padding: 2rem;
+  position: relative;
+  animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Responsive container */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 4rem 1.25rem;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(224, 72, 56, 0)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 0 10px rgba(224, 72, 56, 0.35)); }
+}
+
+@keyframes radarPing {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.radar-circle {
+  animation: radarPing 2s infinite cubic-bezier(0, 0, 0.2, 1);
+}
