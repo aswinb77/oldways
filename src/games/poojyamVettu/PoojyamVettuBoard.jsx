@@ -346,7 +346,7 @@ export default function PoojyamVettuBoard({
               </span>
               {curPlayer === 0 && (
                 <span className="turn-pulse-badge red-pulse">
-                  {myPlayerIndex === 0 ? 'YOUR TURN' : 'TURN'}
+                  TURN
                 </span>
               )}
             </div>
@@ -354,11 +354,10 @@ export default function PoojyamVettuBoard({
           </div>
         </div>
 
-        {/* Center Divider / Dots Left */}
+        {/* Center Divider / Dots Count Only */}
         <div className="scoreboard-center">
           <div className="dots-remaining-pill">
             <span>{TOTAL_DOTS - placedCount}</span>
-            <span className="pill-sub">dots left</span>
           </div>
           {isBotThinking && (
             <div className="bot-thinking-pill">
@@ -379,7 +378,7 @@ export default function PoojyamVettuBoard({
             <div className="player-title-row justify-end">
               {curPlayer === 1 && (
                 <span className="turn-pulse-badge blue-pulse">
-                  {myPlayerIndex === 1 ? 'YOUR TURN' : mode === 'bot' ? 'BOT TURN' : 'TURN'}
+                  TURN
                 </span>
               )}
               <span className="player-title-name">
@@ -395,20 +394,6 @@ export default function PoojyamVettuBoard({
           </div>
         </div>
       </div>
-
-      {/* Live Turn Action Banner (Crystal-Clear Mobile Turn Notification) */}
-      {!gameResult && (
-        <div className={`board-turn-banner ${isMyTurn ? 'is-my-turn-banner' : 'is-opponent-turn-banner'}`}>
-          <span className="turn-banner-dot" />
-          <span className="turn-banner-text">
-            {isMyTurn
-              ? '👉 Your Turn — Tap an empty dot to claim it!'
-              : mode === 'bot'
-              ? '⏳ Bot is thinking...'
-              : `⏳ Waiting for ${curPlayer === 0 ? p1Name : p2Name} to play...`}
-          </span>
-        </div>
-      )}
 
       {/* Kerala School Notebook Paper Card Game Arena */}
       <div className="creamy-card board-canvas-card">

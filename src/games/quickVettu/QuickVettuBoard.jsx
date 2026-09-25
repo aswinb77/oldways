@@ -211,7 +211,7 @@ export default function QuickVettuBoard({
           <div className="player-details">
             <div className="player-title-row">
               <span className="player-title-name">{p1Name}</span>
-              {curPlayer === 0 && !gameResult && <span className="turn-pulse-badge red-pulse">YOUR TURN</span>}
+              {curPlayer === 0 && !gameResult && <span className="turn-pulse-badge red-pulse">TURN</span>}
             </div>
             <span className="piece-name">Red X</span>
           </div>
@@ -227,7 +227,7 @@ export default function QuickVettuBoard({
             <div className="player-title-row justify-end">
               {curPlayer === 1 && !gameResult && (
                 <span className="turn-pulse-badge blue-pulse">
-                  {mode === 'bot' ? 'BOT TURN' : 'OPPONENT'}
+                  TURN
                 </span>
               )}
               <span className="player-title-name">{p2Name}</span>
@@ -241,20 +241,6 @@ export default function QuickVettuBoard({
           </div>
         </div>
       </div>
-
-      {/* Live Turn Banner */}
-      {!gameResult && (
-        <div className={`board-turn-banner ${curPlayer === 0 ? 'is-my-turn-banner' : 'is-opponent-turn-banner'}`}>
-          <span className="turn-banner-dot" />
-          <span className="turn-banner-text">
-            {curPlayer === 0
-              ? '👉 Your Turn — Place your Red X!'
-              : mode === 'bot'
-              ? '⏳ Bot is choosing a square...'
-              : `⏳ Waiting for ${p2Name}...`}
-          </span>
-        </div>
-      )}
 
       {/* 3x3 Board Arena */}
       <div className="creamy-card quick-board-card">
