@@ -162,6 +162,7 @@ export default function PoojyamVettuBoard({
 
   // Handle human click on a dot
   const handleDotClick = (r, c) => {
+    setHoveredDot(null)
     if (gameResult) return
     if (grid[r][c] !== null) return
     if (!isMyTurn) return
@@ -440,7 +441,11 @@ export default function PoojyamVettuBoard({
                       key={`slot_${r}_${c}`}
                       className={`board-dot-cell ${isClaimed ? 'is-claimed' : 'is-open'}`}
                       onClick={() => handleDotClick(r, c)}
-                      onMouseEnter={() => !isClaimed && isMyTurn && setHoveredDot([r, c])}
+                      onTouchStart={() => setHoveredDot(null)}
+                      onMouseEnter={() => {
+                        if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+                        if (!isClaimed && isMyTurn) setHoveredDot([r, c])
+                      }}
                       onMouseLeave={() => setHoveredDot(null)}
                     >
                       {/* Generous Hitbox for touch screens */}

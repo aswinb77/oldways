@@ -799,27 +799,39 @@
   height: auto;
   display: block;
   user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .board-dot-cell {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.board-dot-cell.is-claimed {
+  pointer-events: none;
+  cursor: default;
 }
 
 .slot-img {
-  transition: transform 0.12s ease;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+  transform-origin: center center;
 }
 
-.board-dot-cell:hover .slot-img {
-  transform: scale(1.08);
+/* Strictly limit hover effects to desktop mouse pointers so mobile taps never displace slots */
+@media (hover: hover) and (pointer: fine) {
+  .board-dot-cell.is-open:hover .slot-img {
+    filter: brightness(1.15) drop-shadow(0 0 4px rgba(224, 72, 56, 0.4));
+  }
 }
 
 .placed-x-mark {
-  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: markFadeIn 0.15s ease-out forwards;
 }
 
-@keyframes popIn {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes markFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 .razor-cut-anim {
@@ -1037,10 +1049,12 @@
   transition: all 0.12s ease;
 }
 
-.quick-cell.is-empty:hover:not(:disabled) {
-  background: #FFF;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--border-creamy-dark);
+@media (hover: hover) and (pointer: fine) {
+  .quick-cell.is-empty:hover:not(:disabled) {
+    background: #FFF;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--border-creamy-dark);
+  }
 }
 
 .quick-slot-empty {
@@ -1053,7 +1067,7 @@
   width: 52px;
   height: 52px;
   object-fit: contain;
-  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: markFadeIn 0.15s ease-out forwards;
 }
 
 .quick-cell.is-winner-cell {
