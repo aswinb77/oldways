@@ -1860,10 +1860,14 @@
   border-radius: 8px;
   background: var(--bg-creamy-subtle);
   border: 1px solid var(--border-creamy);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.15s ease;
 }
 
 .modal-close-btn:hover {
   color: var(--text-main);
+  background: #FFF;
 }
 
 .auth-icon-badge, .mp-icon-badge {

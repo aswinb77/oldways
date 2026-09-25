@@ -386,6 +386,8 @@ export default function App() {
     }
     destroyMultiplayer()
     setRoomCode('')
+    setIsMpModalOpen(false)
+    setIsJoinRoomModalOpen(false)
     setIsConnectingGuest(false)
     setIsOpponentDisconnected(false)
     setInGame(false)

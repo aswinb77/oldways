@@ -51,7 +51,15 @@ export default function MultiplayerModal({
   return (
     <div className="creamy-modal-overlay" onClick={onClose}>
       <div className="creamy-modal-content mp-modal-box" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="modal-close-btn" onClick={onClose}>
+        <button
+          type="button"
+          className="modal-close-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose?.()
+          }}
+          aria-label="Close modal"
+        >
           <X size={20} />
         </button>
 
