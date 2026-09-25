@@ -1,4 +1,4 @@
-// Real-time 1v1 Multiplayer Engine (WebRTC PeerJS + BroadcastChannel Cross-Tab Fallback)
+// Real-time 1v1 Multiplayer Engine with WebRTC PeerJS + BroadcastChannel and Reconnect State Sync
 import { Peer } from 'peerjs'
 
 export class MultiplayerRoom {
@@ -15,12 +15,13 @@ export class MultiplayerRoom {
     this.connected = false
     this.remoteProfile = null
     this.isDestroyed = false
+    this.handshakeInterval = null
 
     this.init()
   }
 
   init() {
-    // 1. Setup BroadcastChannel for instant local cross-tab / cross-window testing
+    // 1. Setup BroadcastChannel for instant local cross-tab / cross-window
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         this.bc = new BroadcastChannel(`pv_room_${this.roomCode}`)
@@ -34,6 +35,7 @@ export class MultiplayerRoom {
 
     // 2. Setup WebRTC via PeerJS for online real-time 1v1
     const cleanId = this.roomCode.replace(/[^A-Za-z0-9_-]/g, '')
+    // Use stable host ID; for guest use random salt
     const peerId = this.isHost
       ? `pv-host-${cleanId}`
       : `pv-guest-${cleanId}-${Math.random().toString(36).substring(2, 7)}`
@@ -59,11 +61,8 @@ export class MultiplayerRoom {
           this.connectToPeer(hostPeerId)
         }
 
-        // Broadcast presence locally as well
-        this.sendRaw({
-          type: this.isHost ? 'HOST_ONLINE' : 'GUEST_ONLINE',
-          profile: this.playerProfile,
-        })
+        // Broadcast presence
+        this.broadcastPresence()
       })
 
       this.peer.on('connection', (connection) => {
@@ -73,7 +72,6 @@ export class MultiplayerRoom {
 
       this.peer.on('error', (err) => {
         console.warn('PeerJS note:', err.type, err.message)
-        // If host ID is already taken, fallback smoothly to cross-tab communication
         if (err.type === 'unavailable-id' && this.isHost) {
           this.onStatusChange({ status: 'ready_local', message: 'Room active' })
         }
@@ -82,14 +80,23 @@ export class MultiplayerRoom {
       console.warn('PeerJS init failed, continuing with BroadcastChannel:', err)
     }
 
-    // Ping loop to establish local handshake
+    this.startPresenceLoop()
+  }
+
+  startPresenceLoop() {
+    if (this.handshakeInterval) clearInterval(this.handshakeInterval)
     this.handshakeInterval = setInterval(() => {
-      if (this.connected || this.isDestroyed) return
-      this.sendRaw({
-        type: this.isHost ? 'HOST_ONLINE' : 'GUEST_ONLINE',
-        profile: this.playerProfile,
-      })
+      if (this.isDestroyed) return
+      this.broadcastPresence()
     }, 1500)
+  }
+
+  broadcastPresence() {
+    this.sendRaw({
+      type: this.isHost ? 'HOST_ONLINE' : 'GUEST_ONLINE',
+      profile: this.playerProfile,
+      connected: this.connected,
+    })
   }
 
   connectToPeer(targetId) {
@@ -103,7 +110,6 @@ export class MultiplayerRoom {
 
     this.conn.on('open', () => {
       this.markConnected()
-      // Send handshake profile
       this.send({
         type: 'HANDSHAKE',
         profile: this.playerProfile,
@@ -115,8 +121,9 @@ export class MultiplayerRoom {
     })
 
     this.conn.on('close', () => {
-      this.onStatusChange({ status: 'disconnected', message: 'Opponent disconnected' })
       this.connected = false
+      this.onStatusChange({ status: 'disconnected', message: 'Opponent temporarily disconnected' })
+      this.startPresenceLoop()
     })
 
     this.conn.on('error', (err) => {
@@ -125,19 +132,22 @@ export class MultiplayerRoom {
   }
 
   markConnected() {
-    if (this.connected) return
+    const wasConnected = this.connected
     this.connected = true
-    clearInterval(this.handshakeInterval)
-    this.onStatusChange({ status: 'connected', remoteProfile: this.remoteProfile })
+    this.onStatusChange({
+      status: 'connected',
+      remoteProfile: this.remoteProfile,
+      isReconnect: wasConnected,
+    })
   }
 
   handleIncomingRaw(data, source) {
     if (!data || typeof data !== 'object') return
 
-    // Handshake handling
+    // Handshake & Presence handling
     if (data.type === 'HOST_ONLINE' && !this.isHost) {
+      this.remoteProfile = data.profile
       if (!this.connected) {
-        this.remoteProfile = data.profile
         this.markConnected()
         this.sendRaw({
           type: 'GUEST_ONLINE',
@@ -145,8 +155,8 @@ export class MultiplayerRoom {
         })
       }
     } else if (data.type === 'GUEST_ONLINE' && this.isHost) {
+      this.remoteProfile = data.profile
       if (!this.connected) {
-        this.remoteProfile = data.profile
         this.markConnected()
         this.sendRaw({
           type: 'HOST_WELCOME',
@@ -166,14 +176,16 @@ export class MultiplayerRoom {
     } else if (data.type === 'HANDSHAKE_ACK') {
       this.remoteProfile = data.profile
       this.markConnected()
+    } else if (data.type === 'HEARTBEAT') {
+      // Keep alive response
+      if (!this.connected) this.markConnected()
     } else {
-      // Forward game actions (MOVE, TAUNT, RESET, etc.)
+      // Forward game actions (MOVE, STATE_SYNC, REQUEST_STATE, TAUNT, RESTART)
       this.onMessage(data)
     }
   }
 
   send(data) {
-    // Send via WebRTC if open
     if (this.conn && this.conn.open) {
       try {
         this.conn.send(data)
@@ -181,7 +193,6 @@ export class MultiplayerRoom {
         console.warn('WebRTC send failed:', e)
       }
     }
-    // Also send via BroadcastChannel for seamless local tabs
     this.sendRaw(data)
   }
 
@@ -189,15 +200,16 @@ export class MultiplayerRoom {
     if (this.bc) {
       try {
         this.bc.postMessage(data)
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
   }
 
   destroy() {
     this.isDestroyed = true
-    clearInterval(this.handshakeInterval)
+    if (this.handshakeInterval) {
+      clearInterval(this.handshakeInterval)
+      this.handshakeInterval = null
+    }
     if (this.conn) {
       try {
         this.conn.close()

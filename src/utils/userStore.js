@@ -48,10 +48,50 @@ export function getGuestUser() {
   }
 }
 
+export function getRandomAvatar() {
+  const avatars = DEFAULT_AVATARS.map((a) => a.src)
+  return avatars[Math.floor(Math.random() * avatars.length)]
+}
+
 export function saveUser(user) {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem('pv_user_profile', JSON.stringify(user))
+  } catch (e) {}
+}
+
+export function saveRoomState(roomCode, state) {
+  if (typeof window === 'undefined' || !roomCode) return
+  try {
+    const payload = {
+      ...state,
+      savedAt: Date.now(),
+    }
+    localStorage.setItem(`pv_room_state_${roomCode}`, JSON.stringify(payload))
+  } catch (e) {}
+}
+
+export function loadRoomState(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return null
+  try {
+    const raw = localStorage.getItem(`pv_room_state_${roomCode}`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Expire states older than 4 hours
+    if (Date.now() - (parsed.savedAt || 0) > 4 * 60 * 60 * 1000) {
+      localStorage.removeItem(`pv_room_state_${roomCode}`)
+      return null
+    }
+    return parsed
+  } catch (e) {
+    return null
+  }
+}
+
+export function clearRoomState(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return
+  try {
+    localStorage.removeItem(`pv_room_state_${roomCode}`)
   } catch (e) {}
 }
 

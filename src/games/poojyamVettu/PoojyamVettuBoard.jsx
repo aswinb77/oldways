@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare } from 'lucide-react'
+import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle } from 'lucide-react'
 import {
   N,
   TOTAL_DOTS,
@@ -11,29 +11,67 @@ import {
   ALL_LINES,
 } from './poojyamVettuLogic'
 import { sounds } from '../../utils/audio'
+import { saveRoomState, loadRoomState, clearRoomState } from '../../utils/userStore'
 
 export default function PoojyamVettuBoard({
   mode = 'bot', // 'bot' | 'friend' | 'matchmaking'
+  roomCode = '',
   botDifficulty = 'insane',
   currentUser,
   opponentProfile,
   isHost = true,
+  isOpponentDisconnected = false,
   onSendAction,
   lastRemoteAction,
   onGameOver,
 }) {
-  const [grid, setGrid] = useState(createEmptyGrid)
-  const [curPlayer, setCurPlayer] = useState(0) // 0 = Player 1 (Red X), 1 = Player 2 (Blue X)
-  const [scores, setScores] = useState([0, 0])
-  const [completedLines, setCompletedLines] = useState([])
+  // Check if a saved paused game exists for this room
+  const savedInitialState = useMemo(() => {
+    if (mode === 'friend' && roomCode) {
+      const saved = loadRoomState(roomCode)
+      if (saved && saved.grid) {
+        return saved
+      }
+    }
+    return null
+  }, [mode, roomCode])
+
+  const [grid, setGrid] = useState(() => savedInitialState?.grid || createEmptyGrid())
+  const [curPlayer, setCurPlayer] = useState(() => savedInitialState?.curPlayer || 0) // 0 = P1 (Red X), 1 = P2 (Blue X)
+  const [scores, setScores] = useState(() => savedInitialState?.scores || [0, 0])
+  const [completedLines, setCompletedLines] = useState(() => savedInitialState?.completedLines || [])
   const [hoveredDot, setHoveredDot] = useState(null)
   const [gameResult, setGameResult] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
-  const [lastMove, setLastMove] = useState(null)
+  const [lastMove, setLastMove] = useState(() => savedInitialState?.lastMove || null)
   const [tauntMsg, setTauntMsg] = useState(null)
+  const [reconnectBanner, setReconnectBanner] = useState(false)
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
+
+  // When room reconnects, if we are host, broadcast our state to ensure guest has exact board
+  useEffect(() => {
+    if (mode === 'friend' && isHost && onSendAction) {
+      onSendAction({
+        type: 'STATE_SYNC',
+        state: { grid, scores, completedLines, curPlayer, lastMove },
+      })
+    }
+  }, [opponentProfile])
+
+  // Save room state locally on any move/cut so refreshes/cutoffs resume perfectly
+  useEffect(() => {
+    if (mode === 'friend' && roomCode && !gameResult) {
+      saveRoomState(roomCode, {
+        grid,
+        scores,
+        completedLines,
+        curPlayer,
+        lastMove,
+      })
+    }
+  }, [grid, scores, completedLines, curPlayer, lastMove, mode, roomCode, gameResult])
 
   // Completed lines set for fast lookup
   const completedLineSet = useMemo(() => {
@@ -60,7 +98,6 @@ export default function PoojyamVettuBoard({
 
     // Check line completions
     const currentCompleted = new Set(completedLines.map((l) => l.lineIdx))
-    // Virtual grid with the new move applied
     const virtualGrid = grid.map((row, vr) =>
       row.map((cell, vc) => (vr === r && vc === c ? player : cell))
     )
@@ -107,6 +144,7 @@ export default function PoojyamVettuBoard({
       }
 
       setGameResult(result)
+      if (roomCode) clearRoomState(roomCode)
 
       if (result.winner === myPlayerIndex) {
         sounds.playWin()
@@ -117,17 +155,17 @@ export default function PoojyamVettuBoard({
         onGameOver && onGameOver({ isWin: false, scoreDiff: Math.abs(scores[0] - scores[1]) })
       }
     }
-  }, [placedCount, scores, gameResult, myPlayerIndex, onGameOver])
+  }, [placedCount, scores, gameResult, myPlayerIndex, onGameOver, roomCode])
 
   // Handle human click on a dot
   const handleDotClick = (r, c) => {
     if (gameResult) return
     if (grid[r][c] !== null) return
     if (!isMyTurn) return
+    if (isOpponentDisconnected) return // Pause while waiting for reconnect
 
     executeMove(r, c, myPlayerIndex)
 
-    // Send to remote player if 1v1 online
     if (mode !== 'bot' && onSendAction) {
       onSendAction({
         type: 'MOVE',
@@ -146,6 +184,18 @@ export default function PoojyamVettuBoard({
       const { r, c, player } = lastRemoteAction
       if (grid[r] && grid[r][c] === null) {
         executeMove(r, c, player)
+      }
+    } else if (lastRemoteAction.type === 'STATE_SYNC') {
+      // Synchronize exact paused board from host / peer
+      if (lastRemoteAction.state) {
+        const { grid: sGrid, scores: sScores, completedLines: sLines, curPlayer: sCur, lastMove: sLast } = lastRemoteAction.state
+        if (sGrid) setGrid(sGrid)
+        if (sScores) setScores(sScores)
+        if (sLines) setCompletedLines(sLines)
+        if (sCur !== undefined) setCurPlayer(sCur)
+        if (sLast) setLastMove(sLast)
+        setReconnectBanner(true)
+        setTimeout(() => setReconnectBanner(false), 2500)
       }
     } else if (lastRemoteAction.type === 'RESTART') {
       resetGame()
@@ -185,6 +235,7 @@ export default function PoojyamVettuBoard({
     setGameResult(null)
     setLastMove(null)
     setIsBotThinking(false)
+    if (roomCode) clearRoomState(roomCode)
     if (mode !== 'bot' && onSendAction) {
       onSendAction({ type: 'RESTART' })
     }
@@ -216,6 +267,23 @@ export default function PoojyamVettuBoard({
 
   return (
     <div className="poojyam-board-wrapper">
+      {/* Opponent Disconnected / Reconnect Banner */}
+      {isOpponentDisconnected && (
+        <div className="reconnect-alert-banner">
+          <WifiOff size={18} className="spin-slow" />
+          <span>
+            <strong>Friend temporarily disconnected.</strong> Game is paused — it will automatically resume as soon as they re-open the room link!
+          </span>
+        </div>
+      )}
+
+      {reconnectBanner && (
+        <div className="reconnect-success-banner">
+          <CheckCircle size={18} />
+          <span>Game synchronized and resumed where you left off!</span>
+        </div>
+      )}
+
       {/* Scoreboard Bar */}
       <div className="creamy-card board-scoreboard-card">
         {/* Player 1 (Red X) */}
@@ -280,7 +348,7 @@ export default function PoojyamVettuBoard({
       <div className="creamy-card board-canvas-card">
         {/* Paperclip Nostalgia Badge */}
         <div className="paperclip-visual" aria-hidden="true">
-          <svg viewBox="0 0 28 68" width="22" height="54" fill="none">
+          <svg viewBox="0 0 28 68" width="20" height="50" fill="none">
             <defs>
               <linearGradient id="clip-steel" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#d1d5db" />
@@ -313,7 +381,7 @@ export default function PoojyamVettuBoard({
           <span className="canvas-malayalam">പൂജ്യം വെട്ട് കളിക്കുന്നോ ?</span>
         </div>
 
-        {/* 55-Dot Triangular SVG Canvas */}
+        {/* 55-Dot Triangular SVG Canvas with Mobile-Optimized Touch Hitboxes */}
         <div className="svg-container-wrap">
           <svg
             viewBox="0 0 440 440"
@@ -336,11 +404,11 @@ export default function PoojyamVettuBoard({
                       onMouseEnter={() => !isClaimed && isMyTurn && setHoveredDot([r, c])}
                       onMouseLeave={() => setHoveredDot(null)}
                     >
-                      {/* Generous Hitbox */}
+                      {/* Generous Hitbox for touch screens */}
                       <circle
                         cx={x}
                         cy={y}
-                        r={19}
+                        r={21}
                         fill="transparent"
                         cursor={isClaimed || !isMyTurn ? 'default' : 'pointer'}
                       />
@@ -357,7 +425,7 @@ export default function PoojyamVettuBoard({
                       />
 
                       {/* Ghost preview of active player on hover */}
-                      {!isClaimed && isHovered && isMyTurn && (
+                      {!isClaimed && isHovered && isMyTurn && !isOpponentDisconnected && (
                         <image
                           href={curPlayer === 0 ? '/assets/vettu-x-red.png' : '/assets/vettu-x-blue.png'}
                           x={x - 15}
@@ -416,11 +484,11 @@ export default function PoojyamVettuBoard({
           </svg>
         </div>
 
-        {/* Quick Taunt / Reaction Drawer */}
+        {/* Quick Taunt / Reaction Drawer (Horizontal Scroll on Mobile) */}
         <div className="taunt-strip">
           <span className="taunt-label">
             <MessageSquare size={13} />
-            Quick Taunts:
+            Taunts:
           </span>
           {['പൊളിച്ചു! 🔥', 'അയ്യോ! 😱', 'Nice Cut! ✂️', 'ഇനി ഞാൻ ജയിക്കും! 👑', 'GG WP 🤝'].map((text) => (
             <button

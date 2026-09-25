@@ -1,21 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import confetti from 'canvas-confetti'
-import { RotateCcw, Sparkles, MessageSquare } from 'lucide-react'
+import { RotateCcw, Sparkles, MessageSquare, WifiOff } from 'lucide-react'
 import { checkQuickWinner, getQuickAiMove, QUICK_LINES } from './quickVettuLogic'
 import { sounds } from '../../utils/audio'
+import { saveRoomState, loadRoomState, clearRoomState } from '../../utils/userStore'
 
 export default function QuickVettuBoard({
   mode = 'bot',
+  roomCode = '',
   botDifficulty = 'insane',
   currentUser,
   opponentProfile,
   isHost = true,
+  isOpponentDisconnected = false,
   onSendAction,
   lastRemoteAction,
   onGameOver,
 }) {
-  const [board, setBoard] = useState(Array(9).fill(null))
-  const [curPlayer, setCurPlayer] = useState(0) // 0 = Red X, 1 = Blue X
+  const savedState = useMemo(() => {
+    if (mode === 'friend' && roomCode) {
+      const saved = loadRoomState(roomCode)
+      if (saved && saved.quickBoard) return saved
+    }
+    return null
+  }, [mode, roomCode])
+
+  const [board, setBoard] = useState(() => savedState?.quickBoard || Array(9).fill(null))
+  const [curPlayer, setCurPlayer] = useState(() => savedState?.curPlayer || 0) // 0 = Red X, 1 = Blue X
   const [winningLine, setWinningLine] = useState(null)
   const [gameResult, setGameResult] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
@@ -23,6 +34,16 @@ export default function QuickVettuBoard({
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
+
+  // Persist quick board state
+  useEffect(() => {
+    if (mode === 'friend' && roomCode && !gameResult) {
+      saveRoomState(roomCode, {
+        quickBoard: board,
+        curPlayer,
+      })
+    }
+  }, [board, curPlayer, mode, roomCode, gameResult])
 
   const executeMove = useCallback((idx, player) => {
     setBoard((prev) => {
@@ -32,12 +53,12 @@ export default function QuickVettuBoard({
     })
     sounds.playDot()
 
-    // Virtual board to check victory immediately
     const nextBoard = [...board]
     nextBoard[idx] = player
     const res = checkQuickWinner(nextBoard)
 
     if (res) {
+      if (roomCode) clearRoomState(roomCode)
       if (res.winner === 'tie') {
         sounds.playOver()
         setGameResult({ winner: 'tie', title: '🤝 Tie Game!' })
@@ -63,10 +84,10 @@ export default function QuickVettuBoard({
     }
 
     setCurPlayer(player === 0 ? 1 : 0)
-  }, [board, myPlayerIndex, onGameOver])
+  }, [board, myPlayerIndex, onGameOver, roomCode])
 
   const handleCellClick = (idx) => {
-    if (board[idx] !== null || gameResult || !isMyTurn) return
+    if (board[idx] !== null || gameResult || !isMyTurn || isOpponentDisconnected) return
     executeMove(idx, myPlayerIndex)
 
     if (mode !== 'bot' && onSendAction) {
@@ -84,6 +105,11 @@ export default function QuickVettuBoard({
       }
     } else if (lastRemoteAction.type === 'QUICK_RESTART') {
       resetGame()
+    } else if (lastRemoteAction.type === 'QUICK_STATE_SYNC') {
+      if (lastRemoteAction.state) {
+        if (lastRemoteAction.state.quickBoard) setBoard(lastRemoteAction.state.quickBoard)
+        if (lastRemoteAction.state.curPlayer !== undefined) setCurPlayer(lastRemoteAction.state.curPlayer)
+      }
     } else if (lastRemoteAction.type === 'TAUNT') {
       setTauntMsg(lastRemoteAction.text)
       setTimeout(() => setTauntMsg(null), 3000)
@@ -112,6 +138,7 @@ export default function QuickVettuBoard({
     setWinningLine(null)
     setGameResult(null)
     setIsBotThinking(false)
+    if (roomCode) clearRoomState(roomCode)
     if (mode !== 'bot' && onSendAction) {
       onSendAction({ type: 'QUICK_RESTART' })
     }
@@ -122,6 +149,13 @@ export default function QuickVettuBoard({
 
   return (
     <div className="quick-vettu-wrapper">
+      {isOpponentDisconnected && (
+        <div className="reconnect-alert-banner">
+          <WifiOff size={18} className="spin-slow" />
+          <span>Opponent disconnected. Waiting for them to reconnect to resume match...</span>
+        </div>
+      )}
+
       {/* Scoreboard */}
       <div className="creamy-card board-scoreboard-card">
         <div className={`scoreboard-player p1-box ${curPlayer === 0 && !gameResult ? 'is-active-turn' : ''}`}>
