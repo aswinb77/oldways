@@ -28,6 +28,7 @@ export default function App() {
   const [lastRemoteAction, setLastRemoteAction] = useState(null)
   const [isOpponentDisconnected, setIsOpponentDisconnected] = useState(false)
   const [isConnectingGuest, setIsConnectingGuest] = useState(false)
+  const [guestStatusMsg, setGuestStatusMsg] = useState(null)
   const [queueStatus, setQueueStatus] = useState(null)
   const mpRoomRef = useRef(null)
   const fcfsMatchmakerRef = useRef(null)
@@ -149,18 +150,30 @@ export default function App() {
       onMessage: (msg) => {
         setLastRemoteAction(msg)
       },
-      onStatusChange: ({ status, remoteProfile }) => {
+      onStatusChange: ({ status, remoteProfile, message }) => {
+        if (message) {
+          setGuestStatusMsg(message)
+        }
         if (status === 'connected') {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
           setOpponentProfile(remoteProfile || { username: 'Host Player', avatar: '/assets/avatar-blue.png' })
           setIsConnectingGuest(false)
+          setGuestStatusMsg(null)
           setInGame(true)
         } else if (status === 'disconnected') {
           setIsOpponentDisconnected(true)
         }
       },
     })
+  }
+
+  // Manual retry for guest connection
+  const handleRetryGuestConnection = () => {
+    if (mpRoomRef.current) {
+      setGuestStatusMsg('Re-attempting connection to friend...')
+      mpRoomRef.current.retryConnection()
+    }
   }
 
   // Start Bot Game
@@ -367,15 +380,33 @@ export default function App() {
                 </div>
                 <h2 className="connecting-title">Connecting to Room {roomCode}...</h2>
                 <p className="connecting-sub">
-                  Establishing direct 1v1 connection with your friend. The game board will open as soon as both players are in the room!
+                  {guestStatusMsg || 'Establishing direct 1v1 connection with your friend. The game board will open as soon as both players are in the room!'}
                 </p>
-                <button
-                  type="button"
-                  className="creamy-btn cancel-conn-btn"
-                  onClick={handleExitToLobby}
-                >
-                  Cancel
-                </button>
+
+                <div className="connection-tips-box">
+                  <span className="tip-header">💡 Helpful tips if waiting:</span>
+                  <ul className="tip-list">
+                    <li>Make sure your friend has the room open on their screen (not minimized/asleep).</li>
+                    <li>If opened inside WhatsApp/Instagram, tap <strong>⋮</strong> in top-right and choose <strong>"Open in Chrome"</strong>.</li>
+                  </ul>
+                </div>
+
+                <div className="guest-conn-actions">
+                  <button
+                    type="button"
+                    className="creamy-btn btn-primary retry-conn-btn"
+                    onClick={handleRetryGuestConnection}
+                  >
+                    <span>🔄 Retry Connection</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="creamy-btn cancel-conn-btn"
+                    onClick={handleExitToLobby}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             ) : (
               <Lobby

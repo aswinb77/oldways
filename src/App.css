@@ -2411,13 +2411,57 @@
   font-size: 0.95rem;
   color: var(--text-muted);
   line-height: 1.5;
+  margin-bottom: 1.2rem;
+  max-width: 440px;
+}
+
+.connection-tips-box {
+  background: rgba(234, 219, 206, 0.45);
+  border: 1.5px solid var(--border-creamy);
+  border-radius: 14px;
+  padding: 0.85rem 1.1rem;
+  text-align: left;
+  max-width: 440px;
+  width: 100%;
   margin-bottom: 1.5rem;
-  max-width: 420px;
+}
+
+.tip-header {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+}
+
+.tip-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.tip-list li {
+  margin-bottom: 0.35rem;
+}
+
+.guest-conn-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.retry-conn-btn {
+  font-size: 0.88rem;
+  padding: 0.6rem 1.2rem;
 }
 
 .cancel-conn-btn {
-  font-size: 0.9rem;
-  padding: 0.55rem 1.2rem;
+  font-size: 0.88rem;
+  padding: 0.6rem 1.2rem;
 }
 
 /* Join Room Modal (Friend Invitation) */

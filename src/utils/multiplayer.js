@@ -34,11 +34,10 @@ export class MultiplayerRoom {
     }
 
     // 2. Setup WebRTC via PeerJS for online real-time 1v1
-    const cleanId = this.roomCode.replace(/[^A-Za-z0-9_-]/g, '')
-    // Use stable host ID; for guest use random salt
+    this.cleanId = this.roomCode.replace(/[^A-Za-z0-9_-]/g, '')
     const peerId = this.isHost
-      ? `pv-host-${cleanId}`
-      : `pv-guest-${cleanId}-${Math.random().toString(36).substring(2, 7)}`
+      ? `pv-host-${this.cleanId}`
+      : `pv-guest-${this.cleanId}-${Math.random().toString(36).substring(2, 7)}`
 
     try {
       this.peer = new Peer(peerId, {
@@ -46,7 +45,10 @@ export class MultiplayerRoom {
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:global.stun.twilio.com:3478' },
+            { urls: 'stun:stun.cloudflare.com:3478' },
           ],
         },
       })
@@ -55,10 +57,11 @@ export class MultiplayerRoom {
         if (this.isDestroyed) return
         this.onStatusChange({ status: 'ready', peerId: id, isHost: this.isHost })
 
-        // If guest, connect to the host
+        // If guest, connect to the host and start auto-retry loop
         if (!this.isHost) {
-          const hostPeerId = `pv-host-${cleanId}`
+          const hostPeerId = `pv-host-${this.cleanId}`
           this.connectToPeer(hostPeerId)
+          this.startGuestConnectLoop()
         }
 
         // Broadcast presence
@@ -74,13 +77,74 @@ export class MultiplayerRoom {
         console.warn('PeerJS note:', err.type, err.message)
         if (err.type === 'unavailable-id' && this.isHost) {
           this.onStatusChange({ status: 'ready_local', message: 'Room active' })
+        } else if (err.type === 'peer-unavailable' && !this.isHost) {
+          this.onStatusChange({
+            status: 'waiting_for_host',
+            message: 'Waiting for your friend to open the game screen...',
+          })
         }
       })
     } catch (err) {
       console.warn('PeerJS init failed, continuing with BroadcastChannel:', err)
     }
 
+    // Auto-recover if tab wakes up from mobile background/sleep
+    if (typeof document !== 'undefined') {
+      this.visibilityHandler = () => {
+        if (document.visibilityState === 'visible' && !this.isDestroyed) {
+          if (this.peer && this.peer.disconnected) {
+            try { this.peer.reconnect() } catch (e) {}
+          }
+          if (!this.isHost && !this.connected) {
+            this.connectToPeer(`pv-host-${this.cleanId}`)
+          }
+          this.broadcastPresence()
+        }
+      }
+      document.addEventListener('visibilitychange', this.visibilityHandler)
+    }
+
     this.startPresenceLoop()
+  }
+
+  startGuestConnectLoop() {
+    if (this.guestRetryTimer) clearInterval(this.guestRetryTimer)
+    let retries = 0
+
+    this.guestRetryTimer = setInterval(() => {
+      if (this.connected || this.isDestroyed || this.isHost) {
+        clearInterval(this.guestRetryTimer)
+        return
+      }
+
+      retries++
+      const hostPeerId = `pv-host-${this.cleanId}`
+
+      // Try reconnecting to host
+      if (!this.conn || !this.conn.open) {
+        this.connectToPeer(hostPeerId)
+      }
+
+      this.broadcastPresence()
+      this.onStatusChange({
+        status: 'retrying',
+        attempt: retries,
+        message: retries > 2
+          ? 'Waiting for your friend to open the game screen...'
+          : 'Connecting to room...',
+      })
+    }, 2200)
+  }
+
+  retryConnection() {
+    if (this.peer && this.peer.disconnected) {
+      try { this.peer.reconnect() } catch (e) {}
+    }
+    if (!this.isHost) {
+      this.connectToPeer(`pv-host-${this.cleanId}`)
+      this.startGuestConnectLoop()
+    }
+    this.broadcastPresence()
   }
 
   startPresenceLoop() {
@@ -101,8 +165,12 @@ export class MultiplayerRoom {
 
   connectToPeer(targetId) {
     if (!this.peer || this.peer.destroyed) return
-    const connection = this.peer.connect(targetId, { reliable: true })
-    this.setupConnection(connection)
+    try {
+      const connection = this.peer.connect(targetId, { reliable: true })
+      this.setupConnection(connection)
+    } catch (e) {
+      console.warn('connectToPeer exception:', e)
+    }
   }
 
   setupConnection(connection) {
@@ -124,6 +192,9 @@ export class MultiplayerRoom {
       this.connected = false
       this.onStatusChange({ status: 'disconnected', message: 'Opponent temporarily disconnected' })
       this.startPresenceLoop()
+      if (!this.isHost) {
+        this.startGuestConnectLoop()
+      }
     })
 
     this.conn.on('error', (err) => {
@@ -132,6 +203,10 @@ export class MultiplayerRoom {
   }
 
   markConnected() {
+    if (this.guestRetryTimer) {
+      clearInterval(this.guestRetryTimer)
+      this.guestRetryTimer = null
+    }
     const wasConnected = this.connected
     this.connected = true
     this.onStatusChange({
@@ -206,6 +281,14 @@ export class MultiplayerRoom {
 
   destroy() {
     this.isDestroyed = true
+    if (this.guestRetryTimer) {
+      clearInterval(this.guestRetryTimer)
+      this.guestRetryTimer = null
+    }
+    if (this.visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityHandler)
+      this.visibilityHandler = null
+    }
     if (this.handshakeInterval) {
       clearInterval(this.handshakeInterval)
       this.handshakeInterval = null
