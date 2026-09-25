@@ -835,8 +835,8 @@
 }
 
 .razor-cut-anim {
-  stroke-dasharray: 450;
-  stroke-dashoffset: 450;
+  stroke-dasharray: 750;
+  stroke-dashoffset: 750;
   animation: slashDraw 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
