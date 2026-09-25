@@ -367,6 +367,37 @@
   border: 1px solid #FDE68A;
 }
 
+.locked-badge {
+  background: var(--bg-creamy-subtle) !important;
+  box-shadow: 0 4px 0 var(--border-creamy-dark) !important;
+  border: 1.5px solid var(--border-creamy);
+}
+
+.pill-locked {
+  background: var(--bg-creamy-subtle) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-creamy-dark) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-disabled-locked {
+  background: #F3ECE1 !important;
+  color: #786B5E !important;
+  border: 2px dashed #C8B9A6 !important;
+  box-shadow: 0 3px 0 #B8A895 !important;
+  opacity: 0.9;
+}
+
+.btn-disabled-locked:hover {
+  background: #FFFFFF !important;
+  color: #E25B45 !important;
+  border-color: #E25B45 !important;
+  box-shadow: 0 4px 0 #C74530 !important;
+  transform: translateY(-2px);
+}
+
 .mode-title {
   font-family: var(--font-heading);
   font-weight: 800;

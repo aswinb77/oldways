@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Bot, Users, Zap, Share2, Copy, Check, ArrowRight, Play, Sparkles, ShieldAlert } from 'lucide-react'
+import { Bot, Users, Zap, Share2, Copy, Check, ArrowRight, Play, Sparkles, ShieldAlert, Lock } from 'lucide-react'
 
 export default function Lobby({
   selectedGame,
@@ -50,20 +50,29 @@ export default function Lobby({
       {/* Mode Cards Grid */}
       <div className="mode-cards-grid">
         {/* Mode 1: 1v1 Online Matchmaking */}
-        <div className="creamy-card mode-card match-highlight-card">
+        <div className={`creamy-card mode-card match-highlight-card ${user.isGuest ? 'is-guest-locked' : ''}`}>
           <div className="mode-card-header">
-            <div className="mode-badge-icon pulse-icon">
-              <Zap size={26} color="#FFFFFF" />
+            <div className={`mode-badge-icon ${user.isGuest ? 'locked-badge' : 'pulse-icon'}`}>
+              {user.isGuest ? <Lock size={24} color="#786B5E" /> : <Zap size={26} color="#FFFFFF" />}
             </div>
-            <span className="live-status-pill">
-              <span className="live-dot" />
-              Live Online 1v1
-            </span>
+            {user.isGuest ? (
+              <span className="live-status-pill pill-locked" onClick={onOpenAuth} role="button">
+                <Lock size={12} />
+                Login Required
+              </span>
+            ) : (
+              <span className="live-status-pill">
+                <span className="live-dot" />
+                Live Online 1v1
+              </span>
+            )}
           </div>
 
           <h3 className="mode-title">Quick Matchmaking</h3>
           <p className="mode-desc">
-            Find an available online player instantly. Logged-in players earn <strong>+25 Weekly Points</strong> on win!
+            {user.isGuest
+              ? 'Find an online opponent in ranked 1v1. Log in to activate matchmaking and earn weekly points!'
+              : 'Find an available online player instantly. Logged-in players earn +25 Weekly Points on win!'}
           </p>
 
           <div className="mode-perk-row">
@@ -71,14 +80,26 @@ export default function Lobby({
             <span>Official Ranked 1v1 Match</span>
           </div>
 
-          <button
-            type="button"
-            className="creamy-btn btn-primary mode-action-btn"
-            onClick={onStartMatchmaking}
-          >
-            <Play size={18} fill="#FFF" />
-            <span>Find Online Match</span>
-          </button>
+          {user.isGuest ? (
+            <button
+              type="button"
+              className="creamy-btn mode-action-btn btn-disabled-locked"
+              onClick={onOpenAuth}
+              title="Click to Log In and enable online matchmaking"
+            >
+              <Lock size={18} />
+              <span>Login to Find Match</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="creamy-btn btn-primary mode-action-btn"
+              onClick={onStartMatchmaking}
+            >
+              <Play size={18} fill="#FFF" />
+              <span>Find Online Match</span>
+            </button>
+          )}
         </div>
 
         {/* Mode 2: Play with Friend (Room Code) */}
