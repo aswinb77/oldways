@@ -226,7 +226,7 @@ export default function QuickVettuBoard({
             <span className="piece-name">Blue X</span>
           </div>
           <div className="player-avatar-badge">
-            <img src={mode === 'bot' ? '/assets/catlook.png' : (opponentProfile?.avatar || '/assets/shield-code-blue.png')} alt="P2" className="player-img" />
+            <img src={mode === 'bot' ? '/assets/avatar-orange.png' : (opponentProfile?.avatar || '/assets/avatar-blue.png')} alt="P2" className="player-img" />
             <img src="/assets/vettu-x-blue.png" alt="O" className="piece-indicator-icon" />
           </div>
         </div>

@@ -1,34 +1,40 @@
 // User Authentication, Profile, and Weekly Leaderboard Store
 
 const DEFAULT_AVATARS = [
-  { id: 'aswin', name: 'Aswin Hero', src: '/assets/aswin-avatar.png' },
-  { id: 'aswinduo', name: 'Duo Companion', src: '/assets/aswin-duo.png' },
-  { id: 'cat', name: 'Cool Cat', src: '/assets/catlook.png' },
-  { id: 'crane', name: 'Paper Crane', src: '/assets/papercrane.png' },
-  { id: 'shield_blue', name: 'Blue Knight', src: '/assets/shield-code-blue.png' },
-  { id: 'shield_orange', name: 'Fire Guardian', src: '/assets/shield-code-orange.png' },
-  { id: 'shield_edu', name: 'Scholar', src: '/assets/shield-edu.png' },
+  { id: 'shield_blue', name: 'Blue Shield', src: '/assets/avatar-blue.png' },
+  { id: 'shield_green', name: 'Green Shield', src: '/assets/avatar-green.png' },
+  { id: 'shield_purple', name: 'Purple Shield', src: '/assets/avatar-purple.png' },
+  { id: 'shield_orange', name: 'Orange Shield', src: '/assets/avatar-orange.png' },
+  { id: 'shield_red', name: 'Red Shield', src: '/assets/avatar-red.png' },
+  { id: 'shield_cyan', name: 'Cyan Shield', src: '/assets/avatar-cyan.png' },
 ]
 
 export { DEFAULT_AVATARS }
 
 // Initial Weekly Leaderboard Seed Data
 const INITIAL_LEADERBOARD = [
-  { rank: 1, id: 'u_1', username: 'Rahul_Kochi', avatar: '/assets/aswin-avatar.png', wins: 48, losses: 6, points: 1240, streak: 7, badge: 'Grandmaster' },
-  { rank: 2, id: 'u_2', username: 'Ananya_TVM', avatar: '/assets/catlook.png', wins: 42, losses: 9, points: 1080, streak: 5, badge: 'Master' },
-  { rank: 3, id: 'u_3', username: 'Midhun_Calicut', avatar: '/assets/shield-code-blue.png', wins: 37, losses: 11, points: 940, streak: 3, badge: 'Master' },
-  { rank: 4, id: 'u_4', username: 'Sneha_Thrissur', avatar: '/assets/aswin-duo.png', wins: 31, losses: 8, points: 810, streak: 4, badge: 'Diamond' },
-  { rank: 5, id: 'u_5', username: 'Arjun_Kollam', avatar: '/assets/shield-code-orange.png', wins: 28, losses: 14, points: 720, streak: 2, badge: 'Diamond' },
-  { rank: 6, id: 'u_6', username: 'Fathima_Malappuram', avatar: '/assets/papercrane.png', wins: 25, losses: 10, points: 650, streak: 1, badge: 'Platinum' },
-  { rank: 7, id: 'u_7', username: 'Vishnu_Palakkad', avatar: '/assets/shield-edu.png', wins: 22, losses: 12, points: 580, streak: 2, badge: 'Platinum' },
-  { rank: 8, id: 'u_8', username: 'Devika_Alappuzha', avatar: '/assets/catlook.png', wins: 19, losses: 9, points: 510, streak: 0, badge: 'Gold' },
+  { rank: 1, id: 'u_1', username: 'Rahul_Kochi', avatar: '/assets/avatar-red.png', wins: 48, losses: 6, points: 1240, streak: 7, badge: 'Grandmaster' },
+  { rank: 2, id: 'u_2', username: 'Ananya_TVM', avatar: '/assets/avatar-purple.png', wins: 42, losses: 9, points: 1080, streak: 5, badge: 'Master' },
+  { rank: 3, id: 'u_3', username: 'Midhun_Calicut', avatar: '/assets/avatar-blue.png', wins: 37, losses: 11, points: 940, streak: 3, badge: 'Master' },
+  { rank: 4, id: 'u_4', username: 'Sneha_Thrissur', avatar: '/assets/avatar-cyan.png', wins: 31, losses: 8, points: 810, streak: 4, badge: 'Diamond' },
+  { rank: 5, id: 'u_5', username: 'Arjun_Kollam', avatar: '/assets/avatar-orange.png', wins: 28, losses: 14, points: 720, streak: 2, badge: 'Diamond' },
+  { rank: 6, id: 'u_6', username: 'Fathima_Malappuram', avatar: '/assets/avatar-green.png', wins: 25, losses: 10, points: 650, streak: 1, badge: 'Platinum' },
+  { rank: 7, id: 'u_7', username: 'Vishnu_Palakkad', avatar: '/assets/avatar-blue.png', wins: 22, losses: 12, points: 580, streak: 2, badge: 'Platinum' },
+  { rank: 8, id: 'u_8', username: 'Devika_Alappuzha', avatar: '/assets/avatar-red.png', wins: 19, losses: 9, points: 510, streak: 0, badge: 'Gold' },
 ]
 
 export function loadUser() {
   if (typeof window === 'undefined') return getGuestUser()
   try {
     const raw = localStorage.getItem('pv_user_profile')
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      // Upgrade any old avatar to one of the new shield icons
+      if (!parsed.avatar || !parsed.avatar.includes('avatar-')) {
+        parsed.avatar = '/assets/avatar-blue.png'
+      }
+      return parsed
+    }
   } catch (e) {}
   return getGuestUser()
 }
@@ -39,7 +45,7 @@ export function getGuestUser() {
     id: `guest_${randomSuffix}`,
     username: `Guest_${randomSuffix}`,
     isGuest: true,
-    avatar: '/assets/aswin-avatar.png',
+    avatar: '/assets/avatar-blue.png',
     wins: 0,
     losses: 0,
     points: 0,

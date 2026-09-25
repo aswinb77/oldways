@@ -108,7 +108,7 @@ export default function App() {
         if (status === 'connected') {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
-          setOpponentProfile(remoteProfile || { username: 'Friend', avatar: '/assets/catlook.png' })
+          setOpponentProfile(remoteProfile || { username: 'Friend', avatar: '/assets/avatar-cyan.png' })
           setIsMpModalOpen(false)
           setIsConnectingGuest(false)
           setInGame(true)
@@ -145,7 +145,7 @@ export default function App() {
         if (status === 'connected') {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
-          setOpponentProfile(remoteProfile || { username: 'Host Player', avatar: '/assets/shield-code-blue.png' })
+          setOpponentProfile(remoteProfile || { username: 'Host Player', avatar: '/assets/avatar-blue.png' })
           setIsConnectingGuest(false)
           setInGame(true)
         } else if (status === 'disconnected') {
@@ -217,7 +217,7 @@ export default function App() {
         if (status === 'connected') {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
-          setOpponentProfile(remoteProfile || { username: 'Live Player', avatar: '/assets/catlook.png' })
+          setOpponentProfile(remoteProfile || { username: 'Live Player', avatar: '/assets/avatar-purple.png' })
           setIsMpModalOpen(false)
           setInGame(true)
         } else if (status === 'disconnected') {
@@ -234,7 +234,7 @@ export default function App() {
     setOpponentProfile({
       id: 'challenger_sneha',
       username: 'Sneha_Thrissur',
-      avatar: '/assets/aswin-duo.png',
+      avatar: '/assets/avatar-cyan.png',
       badge: 'Diamond',
       points: 810,
     })

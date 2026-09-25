@@ -296,7 +296,7 @@ export default function PoojyamVettuBoard({
   }
 
   const p1Name = isHost ? currentUser.username : (opponentProfile?.username || 'Host Player')
-  const p1Avatar = isHost ? currentUser.avatar : (opponentProfile?.avatar || '/assets/aswin-avatar.png')
+  const p1Avatar = isHost ? currentUser.avatar : (opponentProfile?.avatar || '/assets/avatar-blue.png')
 
   const p2Name = mode === 'bot'
     ? `Bot (${botDifficulty.toUpperCase()})`
@@ -305,10 +305,10 @@ export default function PoojyamVettuBoard({
     : (opponentProfile?.username || 'Challenger')
 
   const p2Avatar = mode === 'bot'
-    ? '/assets/catlook.png'
+    ? '/assets/avatar-orange.png'
     : !isHost
     ? currentUser.avatar
-    : (opponentProfile?.avatar || '/assets/shield-code-blue.png')
+    : (opponentProfile?.avatar || '/assets/avatar-red.png')
 
   return (
     <div className="poojyam-board-wrapper">
