@@ -7,11 +7,11 @@ import MultiplayerModal from './components/MultiplayerModal'
 import JoinRoomModal from './components/JoinRoomModal'
 import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
-import { loadUser, recordMatchResult, loadRoomState, clearRoomState } from './utils/userStore'
+import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
 import { FCFSMatchmaker } from './utils/fcfsMatchmaker'
 import { sounds } from './utils/audio'
-import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Sparkles, Loader2, DoorClosed } from 'lucide-react'
 import './App.css'
 
 export default function App() {
@@ -30,6 +30,7 @@ export default function App() {
   const [isConnectingGuest, setIsConnectingGuest] = useState(false)
   const [guestStatusMsg, setGuestStatusMsg] = useState(null)
   const [queueStatus, setQueueStatus] = useState(null)
+  const [roomExpiredNotice, setRoomExpiredNotice] = useState(null)
   const mpRoomRef = useRef(null)
   const fcfsMatchmakerRef = useRef(null)
 
@@ -70,6 +71,18 @@ export default function App() {
 
     if (roomParam) {
       const targetCode = roomParam.trim().toUpperCase()
+      // If room was closed or marked finished, display notice and remove param from URL
+      if (isRoomClosed(targetCode)) {
+        setRoomExpiredNotice({
+          code: targetCode,
+          message: `Room ${targetCode} has ended or both players have left. This link is no longer valid.`,
+        })
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
+        return
+      }
+
       const savedRole = sessionStorage.getItem(`pv_room_role_${targetCode}`)
       
       // If user was host of this room, resume as host
@@ -103,6 +116,27 @@ export default function App() {
     initMultiplayerHost(code, user)
   }
 
+  // Handle remote notification when opponent leaves and closes room
+  const handleRemoteRoomClosed = (msg) => {
+    const closedCode = msg?.roomCode || roomCode
+    if (closedCode) {
+      markRoomClosed(closedCode)
+      clearRoomState(closedCode)
+    }
+    destroyMultiplayer()
+    setRoomCode('')
+    setIsConnectingGuest(false)
+    setIsOpponentDisconnected(false)
+    setInGame(false)
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+    setRoomExpiredNotice({
+      code: closedCode,
+      message: 'Your friend has left the game. The room has been deleted and the link is now closed.',
+    })
+  }
+
   // Helper to initialize Host Room
   const initMultiplayerHost = (code, hostUser) => {
     sessionStorage.setItem(`pv_room_role_${code}`, 'host')
@@ -111,6 +145,10 @@ export default function App() {
       isHost: true,
       playerProfile: hostUser,
       onMessage: (msg) => {
+        if (msg && msg.type === 'ROOM_CLOSED') {
+          handleRemoteRoomClosed(msg)
+          return
+        }
         setLastRemoteAction(msg)
       },
       onStatusChange: ({ status, remoteProfile, isReconnect }) => {
@@ -148,6 +186,10 @@ export default function App() {
       isHost: false,
       playerProfile: guestUser,
       onMessage: (msg) => {
+        if (msg && msg.type === 'ROOM_CLOSED') {
+          handleRemoteRoomClosed(msg)
+          return
+        }
         setLastRemoteAction(msg)
       },
       onStatusChange: ({ status, remoteProfile, message }) => {
@@ -288,7 +330,10 @@ export default function App() {
 
   // Game Over outcome tracking
   const handleGameOver = ({ isWin, scoreDiff }) => {
-    if (roomCode) clearRoomState(roomCode)
+    if (roomCode) {
+      clearRoomState(roomCode)
+      markRoomClosed(roomCode)
+    }
     const updated = recordMatchResult({
       isWin,
       mode: gameMode,
@@ -298,12 +343,23 @@ export default function App() {
     setUser(updated)
   }
 
-  // Return to Lobby
+  // Return to Lobby (Closes Room and Invalidates Link)
   const handleExitToLobby = () => {
+    if (roomCode) {
+      if (mpRoomRef.current) {
+        mpRoomRef.current.send({ type: 'ROOM_CLOSED', roomCode, sender: user.username })
+      }
+      markRoomClosed(roomCode)
+      clearRoomState(roomCode)
+    }
     destroyMultiplayer()
+    setRoomCode('')
     setIsConnectingGuest(false)
     setIsOpponentDisconnected(false)
     setInGame(false)
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
   }
 
   return (
@@ -460,6 +516,33 @@ export default function App() {
         currentUser={user}
         onJoinConfirmed={handleFriendJoinConfirmed}
       />
+
+      {/* Room Expired / Closed Notice Modal */}
+      {roomExpiredNotice && (
+        <div className="creamy-modal-overlay">
+          <div className="creamy-modal-content room-expired-modal-box">
+            <div className="room-expired-badge">
+              <DoorClosed size={36} color="#DC2626" />
+            </div>
+            <h2 className="room-expired-title">Room Closed 🚪</h2>
+            <p className="room-expired-sub">
+              {roomExpiredNotice.message}
+            </p>
+            <button
+              type="button"
+              className="creamy-btn btn-primary"
+              onClick={() => {
+                setRoomExpiredNotice(null)
+                if (typeof window !== 'undefined') {
+                  window.history.replaceState({}, document.title, window.location.pathname)
+                }
+              }}
+            >
+              Back to Lobby
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

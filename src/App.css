@@ -2464,6 +2464,43 @@
   padding: 0.6rem 1.2rem;
 }
 
+/* Room Expired / Closed Modal */
+.room-expired-modal-box {
+  max-width: 440px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 2rem;
+}
+
+.room-expired-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #FEE2E2;
+  border: 2px solid #FECACA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+
+.room-expired-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.room-expired-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
 /* Join Room Modal (Friend Invitation) */
 .join-room-modal-box {
   text-align: center;

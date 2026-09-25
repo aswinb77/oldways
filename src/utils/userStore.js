@@ -98,7 +98,34 @@ export function clearRoomState(roomCode) {
   if (typeof window === 'undefined' || !roomCode) return
   try {
     localStorage.removeItem(`pv_room_state_${roomCode}`)
+    sessionStorage.removeItem(`pv_room_role_${roomCode}`)
   } catch (e) {}
+}
+
+export function markRoomClosed(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return
+  try {
+    const code = roomCode.trim().toUpperCase()
+    const raw = localStorage.getItem('pv_closed_rooms')
+    const closed = raw ? JSON.parse(raw) : {}
+    closed[code] = Date.now()
+    localStorage.setItem('pv_closed_rooms', JSON.stringify(closed))
+    localStorage.removeItem(`pv_room_state_${code}`)
+    sessionStorage.removeItem(`pv_room_role_${code}`)
+  } catch (e) {}
+}
+
+export function isRoomClosed(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return false
+  try {
+    const code = roomCode.trim().toUpperCase()
+    const raw = localStorage.getItem('pv_closed_rooms')
+    if (!raw) return false
+    const closed = JSON.parse(raw)
+    return Boolean(closed[code])
+  } catch (e) {
+    return false
+  }
 }
 
 export function loadLeaderboard() {
