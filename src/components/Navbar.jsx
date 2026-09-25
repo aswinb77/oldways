@@ -79,8 +79,8 @@ export default function Navbar({
               className="user-login-cta"
               onClick={onOpenAuth}
             >
-              <LogIn size={16} />
-              <span>Login to Rank</span>
+              <LogIn size={15} />
+              <span>Login</span>
             </button>
           ) : (
             <div className="user-profile-pill" onClick={onOpenAuth} role="button">
