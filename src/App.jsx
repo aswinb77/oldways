@@ -7,7 +7,7 @@ import MultiplayerModal from './components/MultiplayerModal'
 import JoinRoomModal from './components/JoinRoomModal'
 import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
-import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole } from './utils/userStore'
+import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
 import { FCFSMatchmaker } from './utils/fcfsMatchmaker'
 import { sounds } from './utils/audio'
@@ -84,6 +84,11 @@ export default function App() {
         return
       }
 
+      const savedGame = getRoomGame(targetCode) || gameParam
+      if (savedGame && (savedGame === 'poojyam' || savedGame === 'quick')) {
+        setSelectedGame(savedGame)
+      }
+
       const savedRole = getRoomRole(targetCode)
       
       // If user was host of this room, resume as host
@@ -106,6 +111,8 @@ export default function App() {
     setIsHost(true)
     setGameMode('friend')
     saveRoomRole(code, 'host')
+    const savedGame = getRoomGame(code)
+    if (savedGame) setSelectedGame(savedGame)
 
     const savedState = loadRoomState(code)
     // If game was already in progress with moves, prepare to show paused board
@@ -127,6 +134,8 @@ export default function App() {
     setIsHost(false)
     setGameMode('friend')
     saveRoomRole(code, 'guest')
+    const savedGame = getRoomGame(code)
+    if (savedGame) setSelectedGame(savedGame)
 
     const savedState = loadRoomState(code)
     if (savedState) {
@@ -157,17 +166,19 @@ export default function App() {
     }
     setRoomExpiredNotice({
       code: closedCode,
-      message: 'Both players have now left the game. The room has been deleted and the link is now closed.',
+      message: 'The host has left the game. The room has been deleted and the link is now closed.',
     })
   }
 
   // Helper to initialize Host Room
   const initMultiplayerHost = (code, hostUser) => {
     saveRoomRole(code, 'host')
+    saveRoomGame(code, selectedGame)
     mpRoomRef.current = new MultiplayerRoom({
       roomCode: code,
       isHost: true,
       playerProfile: hostUser,
+      selectedGame,
       onMessage: (msg) => {
         if (msg && msg.type === 'ROOM_CLOSED') {
           handleRemoteRoomClosed(msg)
@@ -215,6 +226,7 @@ export default function App() {
       roomCode: code,
       isHost: false,
       playerProfile: guestUser,
+      selectedGame,
       onMessage: (msg) => {
         if (msg && msg.type === 'ROOM_CLOSED') {
           handleRemoteRoomClosed(msg)
@@ -227,9 +239,13 @@ export default function App() {
         }
         setLastRemoteAction(msg)
       },
-      onStatusChange: ({ status, remoteProfile, message }) => {
+      onStatusChange: ({ status, remoteProfile, selectedGame: remoteGame, message }) => {
         if (message) {
           setGuestStatusMsg(message)
+        }
+        if (remoteGame && (remoteGame === 'poojyam' || remoteGame === 'quick')) {
+          setSelectedGame(remoteGame)
+          saveRoomGame(code, remoteGame)
         }
         if (status === 'connected') {
           sounds.playMatchFound()
@@ -275,12 +291,13 @@ export default function App() {
     setMpModalType('create_room')
     setIsMpModalOpen(true)
     setIsOpponentDisconnected(false)
+    saveRoomRole(code, 'host')
+    saveRoomGame(code, selectedGame)
 
-    // Ensure host browser is on the corresponding room URL and role is remembered
+    // Ensure host browser is on the corresponding room URL with game parameter
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`pv_room_role_${code}`, 'host')
-      const newUrl = `${window.location.pathname}?room=${code}`
-      window.history.replaceState({ room: code, role: 'host' }, document.title, newUrl)
+      const newUrl = `${window.location.pathname}?room=${code}&game=${selectedGame}`
+      window.history.replaceState({ room: code, role: 'host', game: selectedGame }, document.title, newUrl)
     }
 
     initMultiplayerHost(code, user)
@@ -297,10 +314,12 @@ export default function App() {
     setUser(friendUser)
     setIsJoinRoomModalOpen(false)
     if (pendingJoinRoomCode) {
+      saveRoomRole(pendingJoinRoomCode, 'guest')
+      const targetGame = getRoomGame(pendingJoinRoomCode) || selectedGame
+      if (targetGame) setSelectedGame(targetGame)
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem(`pv_room_role_${pendingJoinRoomCode}`, 'guest')
-        const newUrl = `${window.location.pathname}?room=${pendingJoinRoomCode}`
-        window.history.replaceState({ room: pendingJoinRoomCode, role: 'guest' }, document.title, newUrl)
+        const newUrl = `${window.location.pathname}?room=${pendingJoinRoomCode}&game=${targetGame}`
+        window.history.replaceState({ room: pendingJoinRoomCode, role: 'guest', game: targetGame }, document.title, newUrl)
       }
       initMultiplayerGuest(pendingJoinRoomCode, friendUser)
     }
@@ -391,22 +410,18 @@ export default function App() {
     setUser(updated)
   }
 
-  // Return to Lobby (Only closes the room if BOTH players have left, or if solo)
+  // Return to Lobby: CLOSE the room ONLY if Host leaves; if Guest leaves, keep room open for reconnect
   const handleExitToLobby = () => {
     if (roomCode) {
-      const hasOpponentEverJoined = Boolean(opponentProfile)
-      const isOpponentAlreadyOut = isOpponentDisconnected || isOpponentExited
-
-      // Only close room if BOTH players have left the room, or if solo/nobody joined
-      if (!hasOpponentEverJoined || isOpponentAlreadyOut) {
+      if (isHost) {
+        // Host left: Close the room completely and invalidate link
         if (mpRoomRef.current) {
           mpRoomRef.current.send({ type: 'ROOM_CLOSED', roomCode, sender: user.username })
         }
         markRoomClosed(roomCode)
         clearRoomState(roomCode)
       } else {
-        // One player leaves; the remaining player is STILL in the room!
-        // Notify the other player that we exited/disconnected, but DO NOT close the room!
+        // Guest left: Do NOT close room! Host is still waiting in the room.
         if (mpRoomRef.current) {
           mpRoomRef.current.send({ type: 'PLAYER_LEFT', roomCode, sender: user.username })
         }
@@ -565,6 +580,7 @@ export default function App() {
         onClose={handleExitToLobby}
         type={mpModalType}
         roomCode={roomCode}
+        selectedGame={selectedGame}
         queueStatus={queueStatus}
         onStartSimulatedMatch={handleStartSimulatedMatch}
       />

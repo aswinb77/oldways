@@ -7,6 +7,7 @@ export default function MultiplayerModal({
   onClose,
   type, // 'create_room' | 'matchmaking'
   roomCode,
+  selectedGame = 'poojyam',
   onStartSimulatedMatch,
   queueStatus,
 }) {
@@ -28,8 +29,8 @@ export default function MultiplayerModal({
   if (!isOpen) return null
 
   const inviteUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}?room=${roomCode}`
-    : `https://game.dev/?room=${roomCode}`
+    ? `${window.location.origin}${window.location.pathname}?room=${roomCode}&game=${selectedGame}`
+    : `https://game.dev/?room=${roomCode}&game=${selectedGame}`
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteUrl)
@@ -44,7 +45,8 @@ export default function MultiplayerModal({
   }
 
   const handleWhatsAppShare = () => {
-    const text = encodeURIComponent(`Let's play 1v1 Poojyam Vettu! Click here to join my room: ${inviteUrl} (Code: ${roomCode})`)
+    const gameLabel = selectedGame === 'quick' ? 'Quick Vettu (3x3)' : 'Poojyam Vettu (55-Dots)'
+    const text = encodeURIComponent(`Let's play 1v1 ${gameLabel}! Click here to join my room: ${inviteUrl} (Code: ${roomCode})`)
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank')
   }
 

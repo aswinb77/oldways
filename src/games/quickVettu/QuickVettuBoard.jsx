@@ -30,13 +30,28 @@ export default function QuickVettuBoard({
   const [winningLine, setWinningLine] = useState(null)
   const [gameResult, setGameResult] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
-  const [tauntMsg, setTauntMsg] = useState(null)
+  const [tauntData, setTauntData] = useState(null)
+  const tauntTimerRef = useRef(null)
   const [reconnectBanner, setReconnectBanner] = useState(false)
   const [pendingResetOutgoing, setPendingResetOutgoing] = useState(false)
   const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
   const [resetNotice, setResetNotice] = useState(null)
   const [showRejoinChoice, setShowRejoinChoice] = useState(false)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+
+  const triggerTauntDisplay = useCallback((data) => {
+    if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
+    setTauntData(data)
+    tauntTimerRef.current = setTimeout(() => {
+      setTauntData(null)
+    }, 3200)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
+    }
+  }, [])
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -153,10 +168,10 @@ export default function QuickVettuBoard({
       setShowRejoinChoice(false)
       resetGame(false)
     } else if (lastRemoteAction.type === 'TAUNT') {
-      setTauntMsg(lastRemoteAction.text)
-      setTimeout(() => setTauntMsg(null), 3000)
+      const sender = lastRemoteAction.senderName || opponentProfile?.username || 'Opponent'
+      triggerTauntDisplay({ text: lastRemoteAction.text, sender, isSelf: false })
     }
-  }, [lastRemoteAction])
+  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile])
 
   // Bot Turn
   useEffect(() => {
@@ -185,6 +200,13 @@ export default function QuickVettuBoard({
     if (roomCode) clearRoomState(roomCode)
     if (broadcast && mode !== 'bot' && onSendAction) {
       onSendAction({ type: 'QUICK_RESTART' })
+    }
+  }
+
+  const handleSendTaunt = (msg) => {
+    triggerTauntDisplay({ text: msg, sender: 'You', isSelf: true })
+    if (onSendAction) {
+      onSendAction({ type: 'TAUNT', text: msg, senderName: currentUser?.username || 'Player' })
     }
   }
 
@@ -289,7 +311,6 @@ export default function QuickVettuBoard({
 
         <div className="scoreboard-center">
           <div className="fast-match-badge">⚡ 3x3 Fast Vettu</div>
-          {tauntMsg && <div className="live-taunt-bubble">{tauntMsg}</div>}
         </div>
 
         <div className={`scoreboard-player p2-box ${curPlayer === 1 && !gameResult ? 'is-active-turn' : 'is-inactive-turn'}`}>
@@ -314,6 +335,27 @@ export default function QuickVettuBoard({
 
       {/* 3x3 Board Arena */}
       <div className="creamy-card quick-board-card">
+        {/* Top-Right Vacant Space Icon-Only Restart Game Button */}
+        <button
+          type="button"
+          className="canvas-restart-icon-btn"
+          onClick={handleResetClick}
+          disabled={pendingResetOutgoing}
+          title={pendingResetOutgoing ? 'Waiting for reset approval...' : 'Restart Match'}
+          aria-label="Restart Match"
+        >
+          <RotateCcw size={18} className={pendingResetOutgoing ? 'spin-anim' : ''} />
+        </button>
+
+        {/* Floating Active Taunt Toast (Visible to both self and opponent) */}
+        {tauntData && (
+          <div className={`floating-taunt-banner ${tauntData.isSelf ? 'is-self' : 'is-remote'}`}>
+            <span className="floating-taunt-icon">💬</span>
+            <span className="floating-taunt-sender">{tauntData.sender}:</span>
+            <span className="floating-taunt-text">{tauntData.text}</span>
+          </div>
+        )}
+
         <div className="quick-grid">
           {board.map((cell, idx) => {
             const isWinningCell = winningLine && winningLine.includes(idx)
@@ -339,26 +381,30 @@ export default function QuickVettuBoard({
           })}
         </div>
 
+        {/* Quick Taunt / Reaction Drawer */}
+        <div className="taunt-strip">
+          <span className="taunt-label">
+            <MessageSquare size={13} />
+            Taunts:
+          </span>
+          {['പൊളിച്ചു! 🔥', 'അയ്യോ! 😱', 'Nice Cut! ✂️', 'ഇനി ഞാൻ ജയിക്കും! 👑', 'GG WP 🤝'].map((text) => (
+            <button
+              key={text}
+              type="button"
+              className="taunt-btn"
+              onClick={() => handleSendTaunt(text)}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+
         {/* Reset Notice if opponent declined */}
         {resetNotice && (
           <div className="reset-notice-pill">
             <span>{resetNotice}</span>
           </div>
         )}
-
-        <div className="board-controls-bar">
-          <button
-            type="button"
-            className="creamy-btn"
-            onClick={handleResetClick}
-            disabled={pendingResetOutgoing}
-          >
-            <RotateCcw size={16} className={pendingResetOutgoing ? 'spin-anim' : ''} />
-            <span>
-              {pendingResetOutgoing ? 'Waiting for approval...' : 'Restart Match'}
-            </span>
-          </button>
-        </div>
 
         {/* Mutual Reset Incoming Request Modal */}
         {pendingResetIncoming && (

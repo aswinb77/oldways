@@ -113,6 +113,24 @@ export function getRoomRole(roomCode) {
   }
 }
 
+export function saveRoomGame(roomCode, game) {
+  if (typeof window === 'undefined' || !roomCode) return
+  try {
+    const code = roomCode.trim().toUpperCase()
+    localStorage.setItem(`pv_room_game_${code}`, game)
+  } catch (e) {}
+}
+
+export function getRoomGame(roomCode) {
+  if (typeof window === 'undefined' || !roomCode) return null
+  try {
+    const code = roomCode.trim().toUpperCase()
+    return localStorage.getItem(`pv_room_game_${code}`)
+  } catch (e) {
+    return null
+  }
+}
+
 export function clearRoomState(roomCode) {
   if (typeof window === 'undefined' || !roomCode) return
   try {
@@ -120,6 +138,7 @@ export function clearRoomState(roomCode) {
     localStorage.removeItem(`pv_room_state_${code}`)
     sessionStorage.removeItem(`pv_room_role_${code}`)
     localStorage.removeItem(`pv_room_role_${code}`)
+    localStorage.removeItem(`pv_room_game_${code}`)
   } catch (e) {}
 }
 

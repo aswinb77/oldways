@@ -2,10 +2,11 @@
 import { Peer } from 'peerjs'
 
 export class MultiplayerRoom {
-  constructor({ roomCode, isHost, playerProfile, onMessage, onStatusChange }) {
+  constructor({ roomCode, isHost, playerProfile, selectedGame, onMessage, onStatusChange }) {
     this.roomCode = roomCode.trim().toUpperCase()
     this.isHost = isHost
     this.playerProfile = playerProfile
+    this.selectedGame = selectedGame || 'poojyam'
     this.onMessage = onMessage
     this.onStatusChange = onStatusChange
 
@@ -159,6 +160,7 @@ export class MultiplayerRoom {
     this.sendRaw({
       type: this.isHost ? 'HOST_ONLINE' : 'GUEST_ONLINE',
       profile: this.playerProfile,
+      selectedGame: this.selectedGame,
       connected: this.connected,
     })
   }
@@ -181,6 +183,7 @@ export class MultiplayerRoom {
       this.send({
         type: 'HANDSHAKE',
         profile: this.playerProfile,
+        selectedGame: this.selectedGame,
       })
     })
 
@@ -202,7 +205,7 @@ export class MultiplayerRoom {
     })
   }
 
-  markConnected() {
+  markConnected(remoteGame) {
     if (this.guestRetryTimer) {
       clearInterval(this.guestRetryTimer)
       this.guestRetryTimer = null
@@ -212,6 +215,7 @@ export class MultiplayerRoom {
     this.onStatusChange({
       status: 'connected',
       remoteProfile: this.remoteProfile,
+      selectedGame: remoteGame || this.selectedGame,
       isReconnect: wasConnected,
     })
   }
@@ -222,35 +226,42 @@ export class MultiplayerRoom {
     // Handshake & Presence handling
     if (data.type === 'HOST_ONLINE' && !this.isHost) {
       this.remoteProfile = data.profile
+      if (data.selectedGame) this.selectedGame = data.selectedGame
       if (!this.connected) {
-        this.markConnected()
+        this.markConnected(data.selectedGame)
         this.sendRaw({
           type: 'GUEST_ONLINE',
           profile: this.playerProfile,
+          selectedGame: this.selectedGame,
         })
       }
     } else if (data.type === 'GUEST_ONLINE' && this.isHost) {
       this.remoteProfile = data.profile
       if (!this.connected) {
-        this.markConnected()
+        this.markConnected(this.selectedGame)
         this.sendRaw({
           type: 'HOST_WELCOME',
           profile: this.playerProfile,
+          selectedGame: this.selectedGame,
         })
       }
     } else if (data.type === 'HOST_WELCOME') {
       this.remoteProfile = data.profile
-      this.markConnected()
+      if (data.selectedGame) this.selectedGame = data.selectedGame
+      this.markConnected(data.selectedGame)
     } else if (data.type === 'HANDSHAKE') {
       this.remoteProfile = data.profile
-      this.markConnected()
+      if (data.selectedGame && !this.isHost) this.selectedGame = data.selectedGame
+      this.markConnected(data.selectedGame)
       this.send({
         type: 'HANDSHAKE_ACK',
         profile: this.playerProfile,
+        selectedGame: this.selectedGame,
       })
     } else if (data.type === 'HANDSHAKE_ACK') {
       this.remoteProfile = data.profile
-      this.markConnected()
+      if (data.selectedGame && !this.isHost) this.selectedGame = data.selectedGame
+      this.markConnected(data.selectedGame)
     } else if (data.type === 'HEARTBEAT') {
       // Keep alive response
       if (!this.connected) this.markConnected()

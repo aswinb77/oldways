@@ -44,13 +44,28 @@ export default function PoojyamVettuBoard({
   const [gameResult, setGameResult] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
   const [lastMove, setLastMove] = useState(() => savedInitialState?.lastMove || null)
-  const [tauntMsg, setTauntMsg] = useState(null)
+  const [tauntData, setTauntData] = useState(null)
+  const tauntTimerRef = useRef(null)
   const [reconnectBanner, setReconnectBanner] = useState(false)
   const [pendingResetOutgoing, setPendingResetOutgoing] = useState(false)
   const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
   const [resetNotice, setResetNotice] = useState(null)
   const [showRejoinChoice, setShowRejoinChoice] = useState(false)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+
+  const triggerTauntDisplay = useCallback((data) => {
+    if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
+    setTauntData(data)
+    tauntTimerRef.current = setTimeout(() => {
+      setTauntData(null)
+    }, 3200)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
+    }
+  }, [])
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -242,10 +257,10 @@ export default function PoojyamVettuBoard({
       setShowRejoinChoice(false)
       resetGame(false)
     } else if (lastRemoteAction.type === 'TAUNT') {
-      setTauntMsg(lastRemoteAction.text)
-      setTimeout(() => setTauntMsg(null), 3000)
+      const sender = lastRemoteAction.senderName || opponentProfile?.username || 'Opponent'
+      triggerTauntDisplay({ text: lastRemoteAction.text, sender, isSelf: false })
     }
-  }, [lastRemoteAction])
+  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile])
 
   // Handle Bot Turn
   useEffect(() => {
@@ -341,10 +356,9 @@ export default function PoojyamVettuBoard({
 
   // Send Taunt
   const handleSendTaunt = (msg) => {
-    setTauntMsg(msg)
-    setTimeout(() => setTauntMsg(null), 3000)
+    triggerTauntDisplay({ text: msg, sender: 'You', isSelf: true })
     if (onSendAction) {
-      onSendAction({ type: 'TAUNT', text: msg })
+      onSendAction({ type: 'TAUNT', text: msg, senderName: currentUser?.username || 'Player' })
     }
   }
 
@@ -424,11 +438,6 @@ export default function PoojyamVettuBoard({
               <span>Thinking...</span>
             </div>
           )}
-          {tauntMsg && (
-            <div className="live-taunt-bubble">
-              <span>{tauntMsg}</span>
-            </div>
-          )}
         </div>
 
         {/* Player 2 (Blue X) */}
@@ -456,6 +465,26 @@ export default function PoojyamVettuBoard({
 
       {/* Kerala School Notebook Paper Card Game Arena */}
       <div className="creamy-card board-canvas-card">
+        {/* Top-Right Vacant Space Icon-Only Restart Game Button */}
+        <button
+          type="button"
+          className="canvas-restart-icon-btn"
+          onClick={handleResetClick}
+          disabled={pendingResetOutgoing}
+          title={pendingResetOutgoing ? 'Waiting for reset approval...' : 'Reset Board'}
+          aria-label="Reset Board"
+        >
+          <RotateCcw size={18} className={pendingResetOutgoing ? 'spin-anim' : ''} />
+        </button>
+
+        {/* Floating Active Taunt Toast (Visible to both self and opponent) */}
+        {tauntData && (
+          <div className={`floating-taunt-banner ${tauntData.isSelf ? 'is-self' : 'is-remote'}`}>
+            <span className="floating-taunt-icon">💬</span>
+            <span className="floating-taunt-sender">{tauntData.sender}:</span>
+            <span className="floating-taunt-text">{tauntData.text}</span>
+          </div>
+        )}
         {/* 55-Dot Triangular SVG Canvas with Mobile-Optimized Touch Hitboxes */}
         <div className="svg-container-wrap">
           <svg
@@ -589,22 +618,7 @@ export default function PoojyamVettuBoard({
           </div>
         )}
 
-        {/* Controls Footer */}
-        <div className="board-controls-bar">
-          <button
-            type="button"
-            className="creamy-btn"
-            onClick={handleResetClick}
-            disabled={pendingResetOutgoing}
-          >
-            <RotateCcw size={16} className={pendingResetOutgoing ? 'spin-anim' : ''} />
-            <span>
-              {pendingResetOutgoing
-                ? 'Waiting for approval...'
-                : 'Reset Board'}
-            </span>
-          </button>
-        </div>
+
 
         {/* Mutual Reset Incoming Request Modal */}
         {pendingResetIncoming && (
