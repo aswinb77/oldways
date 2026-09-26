@@ -9,7 +9,7 @@ import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
 import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
-import { FCFSMatchmaker } from './utils/fcfsMatchmaker'
+import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
 import { ArrowLeft, Sparkles, Loader2, DoorClosed } from 'lucide-react'
 import './App.css'
@@ -325,24 +325,26 @@ export default function App() {
     }
   }
 
-  // Start 1v1 Quick Matchmaking with First-Come-First-Served (FCFS) Queue
+  // Start 1v1 Quick Matchmaking with Supabase Cloud Realtime Queue
   const handleStartMatchmaking = () => {
     destroyMultiplayer()
     setGameMode('matchmaking')
     setMpModalType('matchmaking')
     setIsMpModalOpen(true)
     setIsOpponentDisconnected(false)
-    setQueueStatus({ state: 'searching', message: 'Entering global matchmaking queue...' })
+    setQueueStatus({ state: 'searching', message: 'Entering global matchmaking pool...' })
 
-    fcfsMatchmakerRef.current = new FCFSMatchmaker({
+    fcfsMatchmakerRef.current = new SupabaseMatchmaker({
       user,
+      selectedGame,
       onStatusUpdate: (status) => {
         setQueueStatus(status)
       },
-      onMatchFound: ({ roomCode: privateRoomCode, isHost: roleIsHost, opponentProfile: oppProfile }) => {
+      onMatchFound: ({ roomCode: privateRoomCode, isHost: roleIsHost, opponentProfile: oppProfile, selectedGame: matchGame }) => {
         sounds.playMatchFound()
         setRoomCode(privateRoomCode)
         setIsHost(roleIsHost)
+        if (matchGame) setSelectedGame(matchGame)
         setOpponentProfile(oppProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
         setIsMpModalOpen(false)
         setInGame(true)
@@ -352,10 +354,12 @@ export default function App() {
           roomCode: privateRoomCode,
           isHost: roleIsHost,
           playerProfile: user,
+          selectedGame: matchGame || selectedGame,
           onMessage: (msg) => {
             setLastRemoteAction(msg)
           },
-          onStatusChange: ({ status, remoteProfile }) => {
+          onStatusChange: ({ status, remoteProfile, selectedGame: syncGame }) => {
+            if (syncGame) setSelectedGame(syncGame)
             if (status === 'connected') {
               sounds.playMatchFound()
               setIsOpponentDisconnected(false)

@@ -50,56 +50,37 @@ export default function Lobby({
       {/* Mode Cards Grid */}
       <div className="mode-cards-grid">
         {/* Mode 1: 1v1 Online Matchmaking */}
-        <div className={`creamy-card mode-card match-highlight-card ${user.isGuest ? 'is-guest-locked' : ''}`}>
+        <div className="creamy-card mode-card match-highlight-card">
           <div className="mode-card-header">
-            <div className={`mode-badge-icon ${user.isGuest ? 'locked-badge' : 'pulse-icon'}`}>
-              {user.isGuest ? <Lock size={24} color="#786B5E" /> : <Zap size={26} color="#FFFFFF" />}
+            <div className="mode-badge-icon pulse-icon">
+              <Zap size={26} color="#FFFFFF" />
             </div>
-            {user.isGuest ? (
-              <span className="live-status-pill pill-locked" onClick={onOpenAuth} role="button">
-                <Lock size={12} />
-                Login Required
-              </span>
-            ) : (
-              <span className="live-status-pill">
-                <span className="live-dot" />
-                Live Online 1v1
-              </span>
-            )}
+            <span className="live-status-pill">
+              <span className="live-dot" />
+              Live Online 1v1
+            </span>
           </div>
 
           <h3 className="mode-title">Quick Matchmaking</h3>
           <p className="mode-desc">
             {user.isGuest
-              ? 'Find an online opponent in ranked 1v1. Log in to activate matchmaking and earn weekly points!'
+              ? 'Find an online opponent in 1v1 duels instantly. Log in to record wins on the global leaderboard!'
               : 'Find an available online player instantly. Logged-in players earn +25 Weekly Points on win!'}
           </p>
 
           <div className="mode-perk-row">
             <Sparkles size={15} color="#D97706" />
-            <span>Official Ranked 1v1 Match</span>
+            <span>{user.isGuest ? 'Casual 1v1 Duel' : 'Ranked 1v1 Match (+25 pts)'}</span>
           </div>
 
-          {user.isGuest ? (
-            <button
-              type="button"
-              className="creamy-btn mode-action-btn btn-disabled-locked"
-              onClick={onOpenAuth}
-              title="Click to Log In and enable online matchmaking"
-            >
-              <Lock size={18} />
-              <span>Login to Find Match</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="creamy-btn btn-primary mode-action-btn"
-              onClick={onStartMatchmaking}
-            >
-              <Play size={18} fill="#FFF" />
-              <span>Find Online Match</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="creamy-btn btn-primary mode-action-btn"
+            onClick={onStartMatchmaking}
+          >
+            <Play size={18} fill="#FFF" />
+            <span>Find Online Match</span>
+          </button>
         </div>
 
         {/* Mode 2: Play with Friend (Room Code) */}

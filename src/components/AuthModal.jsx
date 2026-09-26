@@ -23,8 +23,8 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
       email: email.trim() || `${username.toLowerCase()}@player.com`,
       avatar: selectedAvatar,
       isGuest: false,
-      points: user.points || 120, // initial rating boost for logging in
-      badge: user.points >= 250 ? 'Platinum' : 'Gold',
+      points: Number(user.points) || 0,
+      badge: (user.points && user.points >= 100) ? user.badge : 'Bronze',
     }
 
     saveUser(updated)
@@ -63,11 +63,11 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
       email: 'aswin@game.dev',
       avatar: '/assets/avatar-red.png',
       isGuest: false,
-      wins: 16,
-      losses: 3,
-      points: 420,
-      streak: 4,
-      badge: 'Diamond',
+      wins: 0,
+      losses: 0,
+      points: 0,
+      streak: 0,
+      badge: 'Bronze',
     }
     saveUser(demoUser)
     syncUserToCloud(demoUser)
