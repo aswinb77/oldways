@@ -1,5 +1,5 @@
 import React from 'react'
-import { Trophy, Volume2, VolumeX, LogIn, Sparkles } from 'lucide-react'
+import { Trophy, Server, Volume2, VolumeX, LogIn, User, Sparkles } from 'lucide-react'
 import { sounds } from '../utils/audio'
 
 export default function Navbar({
@@ -72,7 +72,7 @@ export default function Navbar({
             {isMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
           </button>
 
-          {/* User Profile Pill or Login CTA */}
+          {/* User Profile Pill */}
           {user.isGuest ? (
             <button
               type="button"
@@ -99,5 +99,3 @@ export default function Navbar({
     </header>
   )
 }
-
-

@@ -1,14 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Users,
-  Bot,
-  Zap,
-  Plus,
-  Link2,
-  Play,
-  ArrowRight,
-  Lock,
-} from 'lucide-react'
+import { Bot, Users, Zap, Share2, Copy, Check, ArrowRight, Play, Sparkles, ShieldAlert, Lock } from 'lucide-react'
 
 export default function Lobby({
   selectedGame,
@@ -22,6 +13,7 @@ export default function Lobby({
 }) {
   const [selectedBotDiff, setSelectedBotDiff] = useState('insane')
   const [joinCodeInput, setJoinCodeInput] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
   const [showJoinInput, setShowJoinInput] = useState(false)
 
   const handleJoinSubmit = (e) => {
@@ -31,203 +23,140 @@ export default function Lobby({
   }
 
   return (
-    <div className="mobile-dash-container">
-      {/* ─── CARD 1: FLAGSHIP GAME (POOJYAM VETTU) ─── */}
-      <section
-        className={`creamy-card dash-game-banner ${selectedGame === 'poojyam' ? 'is-active-banner' : ''}`}
-        onClick={() => setSelectedGame('poojyam')}
-        role="button"
-        tabIndex={0}
-      >
-        <div className="banner-left">
-          <span className="game-pill-badge">★ FLAGSHIP</span>
-          <h2 className="banner-title">
-            Poojyam Vettu
-            <span className="banner-malayalam"> (പൂജ്യം വെട്ട്)</span>
-          </h2>
-          <div className="banner-meta">
-            <span>● 55 Dots</span>
-            <span className="meta-sep">•</span>
-            <span>✂ 27 Cut Lines</span>
-          </div>
-        </div>
+    <div className="lobby-container">
+      {/* Game Selector Tab */}
+      <div className="game-select-strip">
+        <button
+          type="button"
+          className={`game-pill-btn ${selectedGame === 'poojyam' ? 'is-active' : ''}`}
+          onClick={() => setSelectedGame('poojyam')}
+        >
+          <span className="game-pill-badge">FLAGSHIP</span>
+          <span className="game-pill-title">Poojyam Vettu (പൂജ്യം വെട്ട്)</span>
+          <span className="game-pill-sub">55 Dots · 27 Cut Lines</span>
+        </button>
 
-        <div className="banner-right">
+        <button
+          type="button"
+          className={`game-pill-btn ${selectedGame === 'quick' ? 'is-active' : ''}`}
+          onClick={() => setSelectedGame('quick')}
+        >
+          <span className="game-pill-badge fast-badge">FAST MATCH</span>
+          <span className="game-pill-title">Quick Vettu (3x3 Fast)</span>
+          <span className="game-pill-sub">3 In-a-Row · 60s Blitz</span>
+        </button>
+      </div>
+
+      {/* Mode Cards Grid */}
+      <div className="mode-cards-grid">
+        {/* Mode 1: 1v1 Online Matchmaking */}
+        <div className="creamy-card mode-card match-highlight-card">
+          <div className="mode-card-header">
+            <div className="mode-badge-icon pulse-icon">
+              <Zap size={26} color="#FFFFFF" />
+            </div>
+            <span className="live-status-pill">
+              <span className="live-dot" />
+              Live Online 1v1
+            </span>
+          </div>
+
+          <h3 className="mode-title">Quick Matchmaking</h3>
+          <p className="mode-desc">
+            {user.isGuest
+              ? 'Find an online opponent in 1v1 duels instantly. Log in to record wins on the global leaderboard!'
+              : 'Find an available online player instantly. Logged-in players earn +25 Weekly Points on win!'}
+          </p>
+
+          <div className="mode-perk-row">
+            <Sparkles size={15} color="#D97706" />
+            <span>{user.isGuest ? 'Casual 1v1 Duel' : 'Ranked 1v1 Match (+25 pts)'}</span>
+          </div>
+
           <button
             type="button"
-            className="creamy-btn btn-primary banner-action-btn"
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedGame('poojyam')
-            }}
+            className="creamy-btn btn-primary mode-action-btn"
+            onClick={onStartMatchmaking}
           >
-            <span>Play Now</span>
-            <ArrowRight size={16} />
+            <Play size={18} fill="#FFF" />
+            <span>Find Online Match</span>
           </button>
         </div>
-      </section>
 
-      {/* ─── CARD 2: FAST MATCH (QUICK VETTU 3x3) ─── */}
-      <section
-        className={`creamy-card dash-game-banner ${selectedGame === 'quick' ? 'is-active-banner' : ''}`}
-        onClick={() => setSelectedGame('quick')}
-        role="button"
-        tabIndex={0}
-      >
-        <div className="banner-left">
-          <span className="game-pill-badge fast-badge">⚡ FAST MATCH</span>
-          <h2 className="banner-title">Quick Vettu (3x3 Fast)</h2>
-          <div className="banner-meta">
-            <span>3 In-a-Row</span>
-            <span className="meta-sep">•</span>
-            <span>60s Blitz</span>
-          </div>
-        </div>
-
-        <div className="banner-right">
-          <button
-            type="button"
-            className={`creamy-btn banner-arrow-pill ${selectedGame === 'quick' ? 'btn-blue' : 'btn-outline-creamy'}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedGame('quick')
-            }}
-            aria-label="Select Quick Vettu"
-          >
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      </section>
-
-      {/* ─── CARD 3: PLAY WITH A FRIEND ─── */}
-      <section className="creamy-card dash-mode-card">
-        <div className="mode-card-main-row">
-          {/* Original Chunky 3D Blue Badge */}
-          <div className="mode-badge-icon blue-badge">
-            <Users size={24} color="#FFFFFF" />
+        {/* Mode 2: Play with Friend (Room Code) */}
+        <div className="creamy-card mode-card friend-card">
+          <div className="mode-card-header">
+            <div className="mode-badge-icon blue-badge">
+              <Users size={26} color="#FFFFFF" />
+            </div>
+            <span className="code-pill">Private 1v1 Room</span>
           </div>
 
-          <div className="mode-card-text">
-            <h3 className="mode-card-title">Play with a Friend</h3>
-            <p className="mode-card-desc">
-              Create a room code or join with a friend to duel in real-time.
-            </p>
-          </div>
+          <h3 className="mode-title">Play with a Friend</h3>
+          <p className="mode-desc">
+            Create a unique room code or share a private link directly with friends to duel in real-time.
+          </p>
 
-          {!showJoinInput && (
-            <div className="friend-btns-stack">
+          {!showJoinInput ? (
+            <div className="friend-actions-group">
               <button
                 type="button"
-                className="creamy-btn btn-blue friend-pill-btn"
+                className="creamy-btn btn-blue mode-action-btn"
                 onClick={onCreateFriendRoom}
               >
-                <Plus size={16} />
-                <span>Create Room</span>
+                <Share2 size={17} />
+                <span>Create Room Code</span>
               </button>
 
               <button
                 type="button"
-                className="creamy-btn friend-pill-btn mode-secondary-btn"
+                className="creamy-btn mode-secondary-btn"
                 onClick={() => setShowJoinInput(true)}
               >
-                <Link2 size={15} />
-                <span>Join with Code</span>
+                <span>Have a Code? Join Room</span>
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Expandable Join Code Form */}
-        {showJoinInput && (
-          <form onSubmit={handleJoinSubmit} className="inline-join-row">
-            <input
-              type="text"
-              className="creamy-input inline-code-input"
-              placeholder="e.g. PV-8291"
-              value={joinCodeInput}
-              onChange={(e) => setJoinCodeInput(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="creamy-btn btn-blue inline-join-submit-btn">
-              <span>Join</span>
-              <ArrowRight size={15} />
-            </button>
-            <button
-              type="button"
-              className="inline-cancel-btn"
-              onClick={() => setShowJoinInput(false)}
-            >
-              Cancel
-            </button>
-          </form>
-        )}
-      </section>
-
-      {/* ─── CARD 4: QUICK MATCHMAKING ─── */}
-      <section className="creamy-card dash-mode-card">
-        <div className="mode-card-top-bar">
-          <div className="mode-card-main-row">
-            {/* Original Chunky 3D Red/Amber Badge */}
-            <div className="mode-badge-icon pulse-icon">
-              <Zap size={24} color="#FFFFFF" />
-            </div>
-
-            <div className="mode-card-text">
-              <h3 className="mode-card-title">Quick Matchmaking</h3>
-              <p className="mode-card-desc">
-                Find an online opponent and compete in ranked 1v1 matches.
-              </p>
-            </div>
-          </div>
-
-          <span className="live-status-pill">
-            <span className="live-dot" />
-            Live Online 1v1
-          </span>
-        </div>
-
-        <div className="mode-card-bottom-row">
-          {user.isGuest ? (
-            <button
-              type="button"
-              className="creamy-btn btn-disabled-locked wide-action-btn"
-              onClick={onOpenAuth}
-            >
-              <Lock size={16} />
-              <span>Login to Find Match</span>
-            </button>
           ) : (
-            <button
-              type="button"
-              className="creamy-btn btn-primary wide-action-btn"
-              onClick={onStartMatchmaking}
-            >
-              <Play size={16} fill="#FFF" />
-              <span>Find Online Match</span>
-            </button>
+            <form onSubmit={handleJoinSubmit} className="join-code-form">
+              <div className="join-input-group">
+                <input
+                  type="text"
+                  className="creamy-input code-input"
+                  placeholder="e.g. PV-8492"
+                  value={joinCodeInput}
+                  onChange={(e) => setJoinCodeInput(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="creamy-btn btn-blue">
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+              <button
+                type="button"
+                className="cancel-join-link"
+                onClick={() => setShowJoinInput(false)}
+              >
+                ← Back to create room
+              </button>
+            </form>
           )}
         </div>
-      </section>
 
-      {/* ─── CARD 5: PLAY WITH BOT ─── */}
-      <section className="creamy-card dash-mode-card">
-        <div className="mode-card-top-bar">
-          <div className="mode-card-main-row">
-            {/* Original Chunky 3D Orange Badge */}
+        {/* Mode 3: Play with Bot */}
+        <div className="creamy-card mode-card bot-card">
+          <div className="mode-card-header">
             <div className="mode-badge-icon orange-badge">
-              <Bot size={24} color="#FFFFFF" />
+              <Bot size={26} color="#FFFFFF" />
             </div>
-
-            <div className="mode-card-text">
-              <h3 className="mode-card-title">Play with Bot</h3>
-              <p className="mode-card-desc">
-                Test your skills offline against our heuristic AI.
-              </p>
-            </div>
+            <span className="practice-pill">Solo Practice</span>
           </div>
 
-          {/* Original Creamy Difficulty Selector */}
-          <div className="bot-diff-strip">
+          <h3 className="mode-title">Play with Bot</h3>
+          <p className="mode-desc">
+            Test your skills offline against our heuristic AI. Choose difficulty level below:
+          </p>
+
+          <div className="bot-diff-selector">
             {[
               { id: 'casual', label: 'Casual' },
               { id: 'tactical', label: 'Tactical' },
@@ -243,21 +172,39 @@ export default function Lobby({
               </button>
             ))}
           </div>
-        </div>
 
-        <div className="mode-card-bottom-row">
           <button
             type="button"
-            className="creamy-btn btn-gold wide-action-btn"
+            className="creamy-btn btn-gold mode-action-btn"
             onClick={() => onStartBotGame(selectedBotDiff)}
           >
-            <Play size={16} fill="#FFF" />
+            <Play size={18} fill="#FFF" />
             <span>Play vs {selectedBotDiff.toUpperCase()} Bot</span>
           </button>
         </div>
-      </section>
+      </div>
+
+      {/* Guest Leaderboard Banner if guest */}
+      {user.isGuest && (
+        <div className="creamy-card guest-tip-card">
+          <div className="guest-tip-left">
+            <img src="/assets/aswin-duo.png" alt="Companion" className="tip-avatar" />
+            <div>
+              <h4 className="tip-title">Want to see your name on the Leaderboard?</h4>
+              <p className="tip-desc">
+                Currently playing in Guest Mode. Log in to track your win streaks and earn weekly rating points!
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="creamy-btn btn-primary"
+            onClick={onOpenAuth}
+          >
+            Log In Now
+          </button>
+        </div>
+      )}
     </div>
   )
 }
-
-
