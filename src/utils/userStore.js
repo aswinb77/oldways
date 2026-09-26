@@ -1,4 +1,5 @@
 // User Authentication, Profile, and Weekly Leaderboard Store
+import { syncProfileToCloud } from './supabaseClient'
 
 const DEFAULT_AVATARS = [
   { id: 'shield_blue', name: 'Blue Shield', src: '/assets/avatar-blue.png' },
@@ -246,7 +247,20 @@ export function recordMatchResult({ isWin, mode, scoreDiff = 0, currentUser }) {
   }
 
   saveUser(user)
+
+  // Sync to Supabase Cloud Database in background (with offline resilience)
+  if (!user.isGuest) {
+    syncProfileToCloud(user)
+  }
+
   return user
+}
+
+// Manually trigger profile sync to cloud (e.g. after login or profile edit)
+export function syncUserToCloud(user) {
+  if (user && !user.isGuest) {
+    syncProfileToCloud(user)
+  }
 }
 
 // Calculate remaining time for current week (resets Sunday 23:59:59 UTC)

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { X, Trophy, Sparkles, Check, UserCheck, Shield } from 'lucide-react'
-import { DEFAULT_AVATARS, saveUser } from '../utils/userStore'
+import { DEFAULT_AVATARS, saveUser, syncUserToCloud } from '../utils/userStore'
 
 export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
   const [activeTab, setActiveTab] = useState(user.isGuest ? 'login' : 'edit')
@@ -28,6 +28,7 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
     }
 
     saveUser(updated)
+    syncUserToCloud(updated)
     onUserUpdated(updated)
     setSuccessMsg('Logged in successfully! You are now eligible for the Weekly Leaderboard.')
     setTimeout(() => {
@@ -69,6 +70,7 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
       badge: 'Diamond',
     }
     saveUser(demoUser)
+    syncUserToCloud(demoUser)
     onUserUpdated(demoUser)
     setSuccessMsg('Logged in as Aswin_Pro! Leaderboard points enabled.')
     setTimeout(() => {

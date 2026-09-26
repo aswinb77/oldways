@@ -1,21 +1,41 @@
-import React, { useState, useEffect } from 'react'
-import { Trophy, Flame, Medal, Clock, ShieldCheck, Sparkles, LogIn } from 'lucide-react'
-import { loadLeaderboard, getWeeklyResetTime } from '../utils/userStore'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Trophy, Flame, Medal, Clock, ShieldCheck, Sparkles, LogIn, RefreshCw, Radio } from 'lucide-react'
+import { loadLeaderboard, saveLeaderboard, getWeeklyResetTime } from '../utils/userStore'
+import { fetchGlobalLeaderboard, subscribeToLeaderboard } from '../utils/supabaseClient'
 
 export default function Leaderboard({ user, onOpenAuth }) {
-  const [leaderboard, setLeaderboard] = useState([])
+  const [leaderboard, setLeaderboard] = useState(() => loadLeaderboard())
   const [timeLeft, setTimeLeft] = useState('')
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const refreshFromCloud = useCallback(async () => {
+    setIsSyncing(true)
+    const cloudData = await fetchGlobalLeaderboard()
+    if (cloudData && cloudData.length > 0) {
+      setLeaderboard(cloudData)
+      saveLeaderboard(cloudData)
+    }
+    setIsSyncing(false)
+  }, [])
 
   useEffect(() => {
-    setLeaderboard(loadLeaderboard())
     setTimeLeft(getWeeklyResetTime())
+    refreshFromCloud()
 
     const interval = setInterval(() => {
       setTimeLeft(getWeeklyResetTime())
     }, 60000)
 
-    return () => clearInterval(interval)
-  }, [])
+    // Realtime live subscription: automatically updates table when any player scores
+    const unsubscribe = subscribeToLeaderboard(() => {
+      refreshFromCloud()
+    })
+
+    return () => {
+      clearInterval(interval)
+      unsubscribe()
+    }
+  }, [refreshFromCloud])
 
   const topThree = leaderboard.slice(0, 3)
   const restList = leaderboard.slice(3)
@@ -34,6 +54,15 @@ export default function Leaderboard({ user, onOpenAuth }) {
               <Clock size={15} />
               <span>Resets in: <strong>{timeLeft}</strong></span>
             </div>
+            <button
+              type="button"
+              className="cloud-sync-pill"
+              onClick={refreshFromCloud}
+              title="Click to refresh cloud rankings"
+            >
+              <RefreshCw size={13} className={isSyncing ? 'spin-anim' : ''} />
+              <span>Live Cloud</span>
+            </button>
           </div>
           <p className="banner-desc">
             The Weekly Leaderboard is determined <strong>solely by 1v1 Online Matchmaking</strong> duels! Logged-in players earn 
