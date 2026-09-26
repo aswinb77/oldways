@@ -1,5 +1,5 @@
 import React from 'react'
-import { Gamepad2, Trophy, Volume2, VolumeX, User, Sparkles } from 'lucide-react'
+import { Trophy, Volume2, VolumeX, LogIn, Sparkles } from 'lucide-react'
 import { sounds } from '../utils/audio'
 
 export default function Navbar({
@@ -25,86 +25,72 @@ export default function Navbar({
           role="button"
           tabIndex={0}
         >
-          {/* 3x3 Dots with Cut Line Icon Badge */}
-          <div className="brand-badge-grid">
-            <svg width="24" height="24" viewBox="0 0 28 28" fill="none" className="brand-grid-svg">
-              <circle cx="6" cy="6" r="2.2" fill="#3B82F6" />
-              <circle cx="14" cy="6" r="2.2" fill="#3B82F6" />
-              <circle cx="22" cy="6" r="2.2" fill="#3B82F6" />
-              <circle cx="6" cy="14" r="2.2" fill="#3B82F6" />
-              <circle cx="14" cy="14" r="2.2" fill="#3B82F6" />
-              <circle cx="22" cy="14" r="2.2" fill="#3B82F6" />
-              <circle cx="6" cy="22" r="2.2" fill="#3B82F6" />
-              <circle cx="14" cy="22" r="2.2" fill="#3B82F6" />
-              <circle cx="22" cy="22" r="2.2" fill="#3B82F6" />
-              <line x1="3" y1="9" x2="25" y2="3" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" />
-              <line x1="3" y1="25" x2="25" y2="19" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
+          <div className="brand-badge">
+            <img src="/assets/vettu-x-red.png" alt="X" className="brand-x" />
+            <img src="/assets/vettu-slot-filled.png" alt="O" className="brand-o" />
           </div>
-
           <div className="brand-text-wrap">
             <span className="brand-title">Poojyam Vettu</span>
-            <span className="brand-accent-line" />
+            <span className="brand-malayalam">പൂജ്യം വെട്ട്</span>
           </div>
         </div>
 
-        {/* Right Section: Compact Icon Buttons & User Login Pill */}
-        <div className="navbar-actions">
-          {/* Arena Gamepad Button */}
+        {/* Navigation Tabs */}
+        <nav className="navbar-nav">
           <button
             type="button"
-            className={`nav-icon-circle ${currentView === 'arena' ? 'is-active' : ''}`}
+            className={`nav-tab ${currentView === 'arena' ? 'is-active' : ''}`}
             onClick={() => setCurrentView('arena')}
-            title="Arena Games"
-            aria-label="Arena Games"
           >
-            <Gamepad2 size={18} />
+            <span className="tab-icon">🎮</span>
+            <span>Arena</span>
           </button>
 
-          {/* Leaderboard Trophy Button */}
           <button
             type="button"
-            className={`nav-icon-circle ${currentView === 'leaderboard' ? 'is-active' : ''}`}
+            className={`nav-tab ${currentView === 'leaderboard' ? 'is-active' : ''}`}
             onClick={() => setCurrentView('leaderboard')}
-            title="Leaderboard"
-            aria-label="Leaderboard"
           >
-            <Trophy size={18} />
+            <Trophy size={17} className="tab-lucide" />
+            <span>Leaderboard</span>
+            {!user.isGuest && user.points > 0 && (
+              <span className="nav-point-badge">{user.points} pts</span>
+            )}
           </button>
+        </nav>
 
+        {/* Right Section: Sound Toggle & User Profile */}
+        <div className="navbar-actions">
           {/* Sound Toggle */}
           <button
             type="button"
-            className="nav-icon-circle sound-icon-btn"
+            className="sound-toggle-btn"
             onClick={handleToggleSound}
             title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
             aria-label="Toggle Sound"
           >
-            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            {isMuted ? <VolumeX size={19} /> : <Volume2 size={19} />}
           </button>
 
           {/* User Profile Pill or Login CTA */}
           {user.isGuest ? (
             <button
               type="button"
-              className="navbar-login-pill"
+              className="user-login-cta"
               onClick={onOpenAuth}
-              aria-label="Login"
             >
-              <User size={15} />
+              <LogIn size={15} />
               <span>Login</span>
             </button>
           ) : (
             <div className="user-profile-pill" onClick={onOpenAuth} role="button">
               <img src={user.avatar} alt={user.username} className="profile-avatar" />
-              <div className="profile-info-mini">
+              <div className="profile-info">
                 <span className="profile-name">{user.username}</span>
-                {user.points > 0 && (
-                  <span className="profile-pts">
-                    <Sparkles size={10} color="#D97706" />
-                    {user.points}
-                  </span>
-                )}
+                <span className="profile-points">
+                  <Sparkles size={12} color="#D97706" />
+                  {user.points || 0} pts
+                </span>
               </div>
             </div>
           )}
@@ -113,4 +99,5 @@ export default function Navbar({
     </header>
   )
 }
+
 
