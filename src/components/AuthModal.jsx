@@ -147,24 +147,6 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
     }, 800)
   }
 
-  // Handle Guest Nickname Save
-  const handleGuestSave = (e) => {
-    e.preventDefault()
-    if (!username.trim()) return
-
-    const updated = {
-      ...user,
-      username: username.trim(),
-      avatar: selectedAvatar,
-    }
-
-    saveUser(updated)
-    onUserUpdated(updated)
-    setSuccessMsg('Guest profile updated!')
-    setTimeout(() => {
-      onClose()
-    }, 700)
-  }
 
   // Handle Avatar Update for Logged-In User
   const handleSaveAvatar = () => {
@@ -224,16 +206,6 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
             >
               <UserPlus size={15} />
               <span>Register</span>
-            </button>
-            <button
-              type="button"
-              className={`auth-tab-btn ${activeTab === 'guest' ? 'is-active' : ''}`}
-              onClick={() => {
-                setActiveTab('guest')
-                setErrorMsg('')
-              }}
-            >
-              <span>Guest Nickname</span>
             </button>
           </div>
         )}
@@ -420,51 +392,6 @@ export default function AuthModal({ isOpen, onClose, user, onUserUpdated }) {
           </form>
         )}
 
-        {/* ─── TAB 3: GUEST NICKNAME ─── */}
-        {user.isGuest && activeTab === 'guest' && (
-          <form onSubmit={handleGuestSave} className="auth-form">
-            <div className="avatar-selector-section">
-              <label className="auth-label">Guest Shield Avatar</label>
-              <div className="avatar-grid">
-                {DEFAULT_AVATARS.map((av) => (
-                  <button
-                    key={av.id}
-                    type="button"
-                    className={`avatar-option-btn ${selectedAvatar === av.src ? 'is-selected' : ''}`}
-                    onClick={() => setSelectedAvatar(av.src)}
-                  >
-                    <img src={av.src} alt={av.name} />
-                    {selectedAvatar === av.src && (
-                      <div className="avatar-check">
-                        <Check size={12} color="#FFF" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="auth-label">Guest Handle</label>
-              <input
-                type="text"
-                className="creamy-input"
-                placeholder="Guest Nickname"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
-
-            <p className="guest-note">
-              Guest stats are saved locally on this device. Create an account to secure your unique username and qualify for the official Weekly Leaderboard!
-            </p>
-
-            <button type="submit" className="creamy-btn auth-submit-btn">
-              Save Guest Profile
-            </button>
-          </form>
-        )}
 
         {/* ─── LOGGED IN PROFILE VIEW ─── */}
         {!user.isGuest && (
