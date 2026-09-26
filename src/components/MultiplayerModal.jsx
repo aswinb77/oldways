@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Copy, Check, Share2, Users, Radar, Sparkles, MessageCircle, Bot } from 'lucide-react'
+import { X, Copy, Check, Share2, Users, Search, Sparkles, MessageCircle, Bot, Zap, Swords } from 'lucide-react'
 import { sounds } from '../utils/audio'
 
 export default function MultiplayerModal({
@@ -130,20 +130,20 @@ export default function MultiplayerModal({
           </div>
         ) : (
           <div className="matchmaking-body">
-            <div className="radar-animation-box">
+            <div className="radar-animation-box magnifier-search-box">
               <div className="radar-circle rc-1" />
               <div className="radar-circle rc-2" />
               <div className="radar-circle rc-3" />
-              <div className="radar-center-dot">
-                <Zap size={28} color="#FFF" />
+              <div className="radar-center-dot magnifier-center-dot">
+                <Search size={28} color="#FFF" className="magnifier-scan-anim" />
               </div>
             </div>
 
             <h2 className="mp-modal-title">
-              {queueStatus?.state === 'waiting_host' ? 'Waiting in Queue...' : 'Finding Online Challenger...'}
+              {queueStatus?.state === 'matched' ? 'Opponent Matched!' : 'Searching for Opponent...'}
             </h2>
             <p className="mp-modal-sub">
-              {queueStatus?.message || 'Matching you with an available 1v1 player across the network'}
+              {queueStatus?.message || 'Scanning the network for an available 1v1 challenger...'}
             </p>
 
             <div className="match-stats-row">
@@ -152,25 +152,35 @@ export default function MultiplayerModal({
                 <span className="m-lbl">Searching</span>
               </div>
               <div className="m-stat">
-                <span className="m-val">24ms</span>
-                <span className="m-lbl">Network Ping</span>
+                <span className="m-val">{selectedGame === 'quick' ? '3x3 Quick' : '55-Dots'}</span>
+                <span className="m-lbl">Game Mode</span>
               </div>
               <div className="m-stat">
-                <span className="m-val">{queueStatus?.queuePos ? `#${queueStatus.queuePos}` : 'FCFS'}</span>
-                <span className="m-lbl">Queue Status</span>
+                <span className="m-val live-ping-val">
+                  <span className="live-dot" /> Live
+                </span>
+                <span className="m-lbl">Cloud Pool</span>
               </div>
             </div>
 
+            <button
+              type="button"
+              className="creamy-btn cancel-search-btn"
+              onClick={onClose}
+            >
+              Cancel Search
+            </button>
+
             {searchTimer >= 8 && (
               <div className="instant-challenger-prompt">
-                <p>No immediate peer? Match with an active challenger now:</p>
+                <p>Taking a bit longer? Practice with a live Challenger bot:</p>
                 <button
                   type="button"
                   className="creamy-btn btn-primary instant-match-btn"
                   onClick={onStartSimulatedMatch}
                 >
                   <Bot size={18} />
-                  <span>Duel Live Ranked Challenger (Sneha_Thrissur)</span>
+                  <span>Duel AI Challenger (Sneha_Thrissur)</span>
                 </button>
               </div>
             )}

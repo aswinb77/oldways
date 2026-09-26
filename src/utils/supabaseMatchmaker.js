@@ -62,7 +62,9 @@ export class SupabaseMatchmaker {
 
         if (payload.guestId === this.user.id) {
           this.matched = true
-          this.cleanup()
+          setTimeout(() => {
+            this.cleanup()
+          }, 400)
           this.onStatusUpdate({ state: 'matched', message: 'Opponent found! Entering duel...' })
           this.onMatchFound({
             roomCode: payload.roomCode,
@@ -157,7 +159,10 @@ export class SupabaseMatchmaker {
         },
       })
 
-      this.cleanup()
+      setTimeout(() => {
+        this.cleanup()
+      }, 500)
+
       this.onMatchFound({
         roomCode: privateRoomCode,
         isHost: true,

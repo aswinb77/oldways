@@ -2383,6 +2383,42 @@
   z-index: 2;
 }
 
+.magnifier-center-dot {
+  background: var(--primary);
+  box-shadow: 0 4px 14px rgba(224, 72, 56, 0.4);
+}
+
+.magnifier-scan-anim {
+  animation: searchRock 2s infinite ease-in-out;
+}
+
+@keyframes searchRock {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-15deg); }
+  50% { transform: scale(1) rotate(0deg); }
+  75% { transform: scale(1.1) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.cancel-search-btn {
+  margin-top: 0.3rem;
+  width: 100%;
+  max-width: 220px;
+  background: #FFF;
+  border: 1.5px solid var(--border-creamy);
+  color: var(--text-muted);
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+}
+
+.cancel-search-btn:hover {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
 .radar-circle {
   position: absolute;
   width: 100%;

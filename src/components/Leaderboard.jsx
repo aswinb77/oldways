@@ -11,7 +11,7 @@ export default function Leaderboard({ user, onOpenAuth }) {
   const refreshFromCloud = useCallback(async () => {
     setIsSyncing(true)
     const cloudData = await fetchGlobalLeaderboard()
-    if (cloudData && cloudData.length > 0) {
+    if (cloudData !== null) {
       setLeaderboard(cloudData)
       saveLeaderboard(cloudData)
     }
