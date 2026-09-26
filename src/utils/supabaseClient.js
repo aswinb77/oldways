@@ -26,6 +26,7 @@ export async function fetchGlobalLeaderboard(limit = 50) {
       .from('profiles')
       .select('id, username, avatar, points, wins, losses, streak, badge, is_guest, updated_at')
       .eq('is_guest', false)
+      .not('id', 'like', 'u_%')
       .order('points', { ascending: false })
       .order('wins', { ascending: false })
       .limit(limit)

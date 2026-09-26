@@ -157,8 +157,15 @@ export default function Leaderboard({ user, onOpenAuth }) {
             <span className="col-points">Weekly Score</span>
           </div>
 
-          {leaderboard.map((player) => {
-            const isMe = !user.isGuest && player.id === user.id
+          {leaderboard.length === 0 ? (
+            <div className="leaderboard-empty-state">
+              <Trophy size={40} color="#D97706" />
+              <h3>No Contenders Yet This Week</h3>
+              <p>Be the first player to win an online 1v1 duel to claim the #1 spot!</p>
+            </div>
+          ) : (
+            leaderboard.map((player) => {
+              const isMe = !user.isGuest && player.id === user.id
             return (
               <div
                 key={player.id || player.rank}
@@ -201,7 +208,8 @@ export default function Leaderboard({ user, onOpenAuth }) {
                 </div>
               </div>
             )
-          })}
+            })
+          )}
         </div>
 
         {/* Scoring Rules Footer */}

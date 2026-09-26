@@ -12,17 +12,8 @@ const DEFAULT_AVATARS = [
 
 export { DEFAULT_AVATARS }
 
-// Initial Weekly Leaderboard Seed Data
-const INITIAL_LEADERBOARD = [
-  { rank: 1, id: 'u_1', username: 'Rahul_Kochi', avatar: '/assets/avatar-red.png', wins: 48, losses: 6, points: 1240, streak: 7, badge: 'Grandmaster' },
-  { rank: 2, id: 'u_2', username: 'Ananya_TVM', avatar: '/assets/avatar-purple.png', wins: 42, losses: 9, points: 1080, streak: 5, badge: 'Master' },
-  { rank: 3, id: 'u_3', username: 'Midhun_Calicut', avatar: '/assets/avatar-blue.png', wins: 37, losses: 11, points: 940, streak: 3, badge: 'Master' },
-  { rank: 4, id: 'u_4', username: 'Sneha_Thrissur', avatar: '/assets/avatar-cyan.png', wins: 31, losses: 8, points: 810, streak: 4, badge: 'Diamond' },
-  { rank: 5, id: 'u_5', username: 'Arjun_Kollam', avatar: '/assets/avatar-orange.png', wins: 28, losses: 14, points: 720, streak: 2, badge: 'Diamond' },
-  { rank: 6, id: 'u_6', username: 'Fathima_Malappuram', avatar: '/assets/avatar-green.png', wins: 25, losses: 10, points: 650, streak: 1, badge: 'Platinum' },
-  { rank: 7, id: 'u_7', username: 'Vishnu_Palakkad', avatar: '/assets/avatar-blue.png', wins: 22, losses: 12, points: 580, streak: 2, badge: 'Platinum' },
-  { rank: 8, id: 'u_8', username: 'Devika_Alappuzha', avatar: '/assets/avatar-red.png', wins: 19, losses: 9, points: 510, streak: 0, badge: 'Gold' },
-]
+// Initial Weekly Leaderboard Seed Data (Real players only)
+const INITIAL_LEADERBOARD = []
 
 export function loadUser() {
   if (typeof window === 'undefined') return getGuestUser()
@@ -169,12 +160,15 @@ export function isRoomClosed(roomCode) {
 }
 
 export function loadLeaderboard() {
-  if (typeof window === 'undefined') return INITIAL_LEADERBOARD
+  if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem('pv_leaderboard')
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return (parsed || []).filter((p) => p && p.id && !p.id.startsWith('u_'))
+    }
   } catch (e) {}
-  return INITIAL_LEADERBOARD
+  return []
 }
 
 export function saveLeaderboard(lb) {
