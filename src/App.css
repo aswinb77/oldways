@@ -211,61 +211,74 @@
   color: var(--gold-accent);
 }
 
-/* ── Lobby Screen ── */
-.lobby-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.8rem;
-  margin-top: 1.5rem;
+/* ── Mobile Bottom Dock (Hidden on desktop, active on mobile) ── */
+.mobile-bottom-dock {
+  display: none;
 }
 
-.game-select-strip {
+/* ── Arcade Game-Like Lobby ── */
+.lobby-arcade-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+}
+
+/* 1. Arcade Switcher (Flagship vs Fast) */
+.arcade-game-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.game-pill-btn {
+.arcade-switch-tab {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 1.2rem 1.4rem;
+  padding: 1.1rem 1.4rem;
   border-radius: 18px;
   background: var(--bg-card);
   border: 2px solid var(--border-creamy);
   box-shadow: 0 4px 0 var(--border-creamy-dark);
+  cursor: pointer;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.game-pill-btn:hover {
+.arcade-switch-tab:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 0 var(--border-creamy-dark);
 }
 
-.game-pill-btn.is-active {
-  background: #FFFBF5;
+.arcade-switch-tab.is-active {
+  background: #FFFDF9;
   border-color: #E25B45;
-  box-shadow: 0 5px 0 #C74530, 0 8px 20px rgba(226, 91, 69, 0.12);
+  box-shadow: 0 5px 0 #C74530, 0 8px 24px rgba(226, 91, 69, 0.15);
 }
 
-.game-pill-badge {
+.tab-flagship-pill,
+.tab-fast-pill {
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--red-accent-light);
-  color: var(--red-accent);
   margin-bottom: 0.35rem;
 }
 
-.game-pill-badge.fast-badge {
+.tab-flagship-pill {
+  background: var(--red-accent-light);
+  color: var(--red-accent);
+}
+
+.tab-fast-pill {
   background: var(--blue-accent-light);
   color: var(--blue-accent);
 }
 
-.game-pill-title {
+.tab-title {
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 1.25rem;
@@ -273,10 +286,457 @@
   line-height: 1.2;
 }
 
-.game-pill-sub {
+.tab-malayalam {
   font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-muted);
   margin-top: 0.2rem;
+}
+
+/* 2. Hero Battle Console (1v1 Quick Match) */
+.arcade-hero-stage {
+  position: relative;
+  background: linear-gradient(135deg, #FFFBF5 0%, #FFF5EA 100%);
+  border: 2.5px solid #FDBA74;
+  border-radius: 22px;
+  box-shadow: 0 6px 0 #EA580C, 0 12px 28px rgba(234, 88, 12, 0.12);
+  padding: 1.75rem 2rem;
+  overflow: hidden;
+}
+
+.stage-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.stage-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #16A34A;
+  background: #DCFCE7;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #86EFAC;
+}
+
+.stage-live-dot {
+  width: 8px;
+  height: 8px;
+  background: #16A34A;
+  border-radius: 50%;
+  animation: pulseGlow 1.5s infinite;
+}
+
+.stage-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #C2410C;
+  background: #FFEDD5;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #FDBA74;
+}
+
+.stage-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.stage-info {
+  flex: 1;
+}
+
+.stage-title {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--text-main);
+  line-height: 1.2;
+  margin-bottom: 0.4rem;
+}
+
+.stage-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 1.1rem;
+  max-width: 520px;
+}
+
+.stage-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.stage-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: #FFFFFF;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #FED7AA;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.stage-action-wrap {
+  flex-shrink: 0;
+}
+
+/* Giant Arcade 3D Play Button */
+.arcade-hero-play-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.8rem;
+  background: linear-gradient(180deg, #E25B45 0%, #C74530 100%);
+  border: 2px solid #9E2F1D;
+  border-radius: 18px;
+  color: #FFFFFF;
+  box-shadow: 0 6px 0 #7F1D1D, 0 8px 24px rgba(199, 69, 48, 0.35);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.arcade-hero-play-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #7F1D1D, 0 12px 28px rgba(199, 69, 48, 0.4);
+}
+
+.arcade-hero-play-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #7F1D1D;
+}
+
+.btn-icon-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.btn-text-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.btn-main-text {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #FFFFFF;
+  line-height: 1.15;
+}
+
+.btn-sub-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #FEE2E2;
+  margin-top: 2px;
+}
+
+/* 3. Secondary Battle Pods Grid */
+.arcade-pods-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.arcade-pod {
+  background: var(--bg-card);
+  border: 2px solid var(--border-creamy);
+  border-radius: 20px;
+  box-shadow: 0 4px 0 var(--border-creamy-dark);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  transition: all 0.15s ease;
+}
+
+.arcade-pod:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--border-creamy-dark);
+}
+
+.pod-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.pod-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pod-icon-box.box-blue {
+  background: #2563EB;
+  box-shadow: 0 3px 0 #1E40AF;
+}
+
+.pod-icon-box.box-amber {
+  background: #F59E0B;
+  box-shadow: 0 3px 0 #B45309;
+}
+
+.pod-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.pod-title {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.pod-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.pod-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.arcade-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  border-radius: 14px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.btn-blue-tactile {
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+  color: #FFFFFF;
+  border: 1.5px solid #1E40AF;
+  box-shadow: 0 4px 0 #1E3A8A;
+}
+
+.btn-blue-tactile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #1E3A8A;
+}
+
+.btn-blue-tactile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #1E3A8A;
+}
+
+.btn-outline-tactile {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1.5px solid var(--border-creamy-dark);
+  box-shadow: 0 3px 0 var(--border-creamy-dark);
+}
+
+.btn-outline-tactile:hover {
+  background: #FAF5EE;
+  transform: translateY(-1px);
+}
+
+.btn-outline-tactile:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--border-creamy-dark);
+}
+
+.btn-gold-tactile {
+  background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF;
+  border: 1.5px solid #B45309;
+  box-shadow: 0 4px 0 #92400E;
+}
+
+.btn-gold-tactile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #92400E;
+}
+
+.btn-gold-tactile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #92400E;
+}
+
+/* Difficulty Chips for Bot */
+.bot-diff-strip {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.diff-chip-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-creamy);
+  box-shadow: 0 2px 0 var(--border-creamy-dark);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.diff-chip-btn:hover {
+  color: var(--text-main);
+  border-color: var(--border-creamy-dark);
+}
+
+.diff-chip-btn.is-selected {
+  background: #FFFBEB;
+  color: #92400E;
+  border-color: #F59E0B;
+  box-shadow: 0 3px 0 #D97706;
+}
+
+.pod-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.code-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pod-code-field {
+  font-family: monospace;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pod-code-submit {
+  width: auto;
+  padding: 0.75rem 1rem;
+}
+
+.pod-cancel-link {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: center;
+  padding: 4px;
+}
+
+.pod-cancel-link:hover {
+  color: var(--text-main);
+}
+
+/* 4. Arcade Guest Status Banner */
+.arcade-guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #FFFBEB;
+  border: 2px solid #FDE68A;
+  box-shadow: 0 3px 0 #F59E0B;
+  border-radius: 18px;
+  padding: 1.1rem 1.4rem;
+}
+
+.guest-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.banner-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: #92400E;
+}
+
+.banner-sub {
+  font-size: 0.82rem;
+  color: #B45309;
+  line-height: 1.35;
+}
+
+.btn-login-banner {
+  flex-shrink: 0;
+  width: auto;
+  background: linear-gradient(180deg, #E25B45 0%, #C74530 100%);
+  color: #FFF;
+  border: 1.5px solid #9E2F1D;
+  box-shadow: 0 3px 0 #7F1D1D;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.86rem;
 }
 
 /* Mode Cards Grid */
@@ -3110,12 +3570,78 @@
     height: 18px;
   }
 
-  .nav-tab span:not(.tab-icon) {
-    display: none;
+  /* Hide Desktop Top Tabs on Mobile */
+  .desktop-only-nav {
+    display: none !important;
   }
 
-  .nav-tab {
-    padding: 0.45rem 0.65rem;
+  /* Show Mobile Bottom Dock */
+  .mobile-bottom-dock {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(251, 248, 242, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 2px solid var(--border-creamy);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.45rem 1rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .mobile-dock-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: transparent;
+    border: none;
+    padding: 0.35rem 1.25rem;
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .mobile-dock-btn.is-active {
+    color: var(--red-accent);
+    background: var(--red-accent-light);
+  }
+
+  .dock-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dock-dot-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D97706;
+    border: 2px solid var(--bg-card);
+  }
+
+  .dock-pts {
+    color: var(--gold-accent);
+    font-weight: 800;
+  }
+
+  /* Keep app container padded so bottom dock never obscures content */
+  .app-container {
+    padding-bottom: 5.5rem;
   }
 
   .user-login-cta {
@@ -3125,22 +3651,58 @@
     white-space: nowrap;
   }
 
-  .game-select-strip {
+  /* Arcade Mobile Responsiveness */
+  .arcade-game-switch {
     grid-template-columns: 1fr;
     gap: 0.65rem;
   }
 
-  .game-pill-btn {
-    padding: 0.9rem 1.1rem;
+  .arcade-switch-tab {
+    padding: 0.85rem 1.1rem;
   }
 
-  .mode-cards-grid {
+  .arcade-hero-stage {
+    padding: 1.25rem 1.1rem;
+  }
+
+  .stage-title {
+    font-size: 1.4rem;
+  }
+
+  .stage-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.2rem;
+  }
+
+  .arcade-hero-play-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.95rem 1.2rem;
+  }
+
+  .btn-main-text {
+    font-size: 1.1rem;
+  }
+
+  .arcade-pods-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
-  .mode-card {
-    padding: 1.4rem;
+  .arcade-pod {
+    padding: 1.2rem;
+  }
+
+  .arcade-guest-banner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+    gap: 0.85rem;
+  }
+
+  .btn-login-banner {
+    width: 100%;
   }
 
   /* Scoreboard: Strict 3-column Grid layout (minmax(0, 1fr) auto minmax(0, 1fr)) */
