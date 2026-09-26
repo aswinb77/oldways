@@ -25,6 +25,12 @@ export function loadUser() {
       if (!parsed.avatar || !parsed.avatar.includes('avatar-')) {
         parsed.avatar = '/assets/avatar-blue.png'
       }
+      // Sanitize legacy 120 points from old login bug: points only come from real online wins
+      if ((!parsed.wins || parsed.wins === 0) && parsed.points > 0) {
+        parsed.points = 0
+        parsed.badge = 'Bronze'
+        localStorage.setItem('pv_user_profile', JSON.stringify(parsed))
+      }
       return parsed
     }
   } catch (e) {}
