@@ -11,7 +11,7 @@ import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClo
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
-import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X } from 'lucide-react'
+import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X, Users } from 'lucide-react'
 import './App.css'
 
 export default function App() {
@@ -33,6 +33,7 @@ export default function App() {
   const [guestStatusMsg, setGuestStatusMsg] = useState(null)
   const [queueStatus, setQueueStatus] = useState(null)
   const [roomExpiredNotice, setRoomExpiredNotice] = useState(null)
+  const [roomFullNotice, setRoomFullNotice] = useState(null)
   const mpRoomRef = useRef(null)
   const fcfsMatchmakerRef = useRef(null)
 
@@ -242,6 +243,20 @@ export default function App() {
         setLastRemoteAction(msg)
       },
       onStatusChange: ({ status, remoteProfile, selectedGame: remoteGame, message }) => {
+        if (status === 'room_full') {
+          destroyMultiplayer()
+          setRoomCode('')
+          setIsConnectingGuest(false)
+          setInGame(false)
+          if (typeof window !== 'undefined' && window.location.search) {
+            window.history.replaceState({}, document.title, window.location.pathname)
+          }
+          setRoomFullNotice({
+            code,
+            message: message || 'This room already has 2 players engaged in a duel. Only 1v1 duels are supported.',
+          })
+          return
+        }
         if (message) {
           setGuestStatusMsg(message)
         }
@@ -727,6 +742,46 @@ export default function App() {
             >
               Back to Lobby
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Room Full Notice Modal */}
+      {roomFullNotice && (
+        <div className="creamy-modal-overlay">
+          <div className="creamy-modal-content room-expired-modal-box">
+            <div className="room-expired-badge" style={{ background: '#FEE2E2', borderColor: '#FECACA' }}>
+              <Users size={34} color="#DC2626" />
+            </div>
+            <h2 className="room-expired-title">Room Full 👥</h2>
+            <p className="room-expired-sub">
+              {roomFullNotice.message || 'This room already has 2 players engaged in a duel. Only 1v1 duels are supported.'}
+            </p>
+            <div className="room-full-actions">
+              <button
+                type="button"
+                className="creamy-btn btn-primary"
+                onClick={() => {
+                  setRoomFullNotice(null)
+                  handleCreateFriendRoom()
+                }}
+              >
+                Create Your Own Room
+              </button>
+              <button
+                type="button"
+                className="creamy-btn cancel-conn-btn"
+                onClick={() => {
+                  setRoomFullNotice(null)
+                  if (typeof window !== 'undefined') {
+                    window.history.replaceState({}, document.title, window.location.pathname)
+                  }
+                  setCurrentView('arena')
+                }}
+              >
+                Back to Lobby
+              </button>
+            </div>
           </div>
         </div>
       )}

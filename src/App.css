@@ -3317,6 +3317,18 @@
   margin-bottom: 1.5rem;
 }
 
+.room-full-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.room-full-actions button {
+  width: 100%;
+  justify-content: center;
+}
+
 /* Join Room Modal (Friend Invitation) */
 .join-room-modal-box {
   text-align: center;
