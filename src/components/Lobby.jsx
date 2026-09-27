@@ -9,6 +9,7 @@ import {
   Shield,
   Info,
   X,
+  LogIn,
 } from 'lucide-react'
 
 export default function Lobby({
@@ -114,7 +115,7 @@ export default function Lobby({
       <div className="arcade-battle-hero minimal-battle-hero">
         <div className="hero-top-strip">
           <div className="hero-stakes-badge single-stakes-pill">
-            <span>{user.isGuest ? 'Casual 1v1' : 'Ranked 1v1'}</span>
+            <span>{user.isGuest ? 'Ranked 1v1 · Login Required' : 'Ranked 1v1'}</span>
             <button
               type="button"
               className="info-circle-btn sm-info-btn"
@@ -167,14 +168,26 @@ export default function Lobby({
         </div>
 
         {/* Big Action Button - Minimal & Punchy */}
-        <button
-          type="button"
-          className="arcade-launch-btn minimal-launch-btn"
-          onClick={onStartMatchmaking}
-        >
-          <Play size={20} fill="#FFF" color="#FFF" />
-          <span>Start 1v1 Match</span>
-        </button>
+        {user.isGuest ? (
+          <button
+            type="button"
+            className="arcade-launch-btn minimal-launch-btn guest-locked-btn"
+            onClick={onOpenAuth}
+            title="Login required to play online 1v1 matchmaking"
+          >
+            <LogIn size={20} />
+            <span>Login to Play 1v1</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="arcade-launch-btn minimal-launch-btn"
+            onClick={onStartMatchmaking}
+          >
+            <Play size={20} fill="#FFF" color="#FFF" />
+            <span>Start 1v1 Match</span>
+          </button>
+        )}
 
         {/* Stakes Info Modal (opened via (i)) */}
         {showStakesInfo && (
@@ -191,8 +204,8 @@ export default function Lobby({
                 </button>
               </div>
               <ul className="rules-bullets">
-                <li>Instant peer-to-peer matchmaking with live online players.</li>
-                <li>{user.isGuest ? 'Log in to record wins on the global weekly leaderboard.' : 'Winners earn +25 points towards the weekly leaderboard.'}</li>
+                <li>Instant 1v1 matchmaking with live online players.</li>
+                <li>{user.isGuest ? '1v1 Online Matchmaking requires a registered account so leaderboard points and rank are tracked.' : 'Winners earn +25 points towards the weekly leaderboard.'}</li>
                 <li>Average matchmaking queue time is ~3 seconds.</li>
               </ul>
             </div>

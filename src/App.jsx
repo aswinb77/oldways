@@ -326,8 +326,13 @@ export default function App() {
     }
   }
 
-  // Start 1v1 Quick Matchmaking with Supabase Cloud Realtime Queue
+  // Start 1v1 Quick Matchmaking with Supabase Cloud Realtime Queue (Logged-in only)
   const handleStartMatchmaking = () => {
+    if (user.isGuest) {
+      setIsAuthOpen(true)
+      return
+    }
+
     destroyMultiplayer()
     setGameMode('matchmaking')
     setMpModalType('matchmaking')
