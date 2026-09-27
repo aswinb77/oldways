@@ -1359,49 +1359,66 @@
   justify-content: center;
 }
 
-/* Modal Overlay on Board */
+/* Modal Overlay on Board - Full Screen Viewport Overlay */
 .board-modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(45, 33, 24, 0.45);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-  border-radius: 18px;
-  padding: 1rem;
-  animation: fadeIn 0.2s ease-out;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(30, 21, 16, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  padding: 1.25rem !important;
+  animation: fadeIn 0.22s ease-out;
 }
 
 .result-modal-card {
-  max-width: 380px;
-  width: 100%;
-  padding: 2rem 1.5rem;
+  max-width: 400px;
+  width: 92%;
+  padding: 2.2rem 1.6rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: scaleUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #FFFDF9 !important;
+  border: 3px solid var(--border-creamy) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 6px 0 var(--border-creamy-dark) !important;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.result-modal-card.is-win {
+  border-color: #F59E0B !important;
+  box-shadow: 0 16px 40px rgba(245, 158, 11, 0.28), 0 6px 0 #D97706 !important;
+}
+
+.result-modal-card.is-loss {
+  border-color: #EF4444 !important;
+  box-shadow: 0 16px 40px rgba(239, 68, 68, 0.24), 0 6px 0 #B91C1C !important;
 }
 
 .result-icon-badge {
-  font-size: 3rem;
+  font-size: 3.2rem;
   margin-bottom: 0.5rem;
+  line-height: 1;
 }
 
 .result-title {
   font-family: var(--font-heading);
-  font-size: 1.6rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: var(--text-main);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .result-sub {
   font-size: 0.9rem;
   color: var(--text-muted);
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
   margin-bottom: 1.2rem;
 }
 
@@ -1409,19 +1426,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.2rem;
+  gap: 1.4rem;
   background: var(--bg-creamy-subtle);
   border: 1.5px solid var(--border-creamy);
-  padding: 0.8rem 1.4rem;
+  padding: 0.75rem 1.4rem;
   border-radius: 16px;
   width: 100%;
   margin-bottom: 1rem;
+  box-sizing: border-box;
 }
 
 .score-team {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 2px;
 }
 
 .score-team img {
@@ -1438,34 +1457,72 @@
 }
 
 .team-name {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .score-vs {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   color: var(--text-muted);
 }
 
 .leaderboard-earned-notice {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 0.85rem;
   font-weight: 700;
   color: #B45309;
   background: var(--gold-accent-light);
-  padding: 0.5rem 0.8rem;
-  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 12px;
   border: 1px solid #FDE68A;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.matchmaking-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(226, 91, 69, 0.1);
+  border: 1.5px solid rgba(226, 91, 69, 0.25);
+  color: #C2410C;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  margin-bottom: 1.1rem;
+  width: 100%;
+  box-sizing: border-box;
+  animation: pulseGlow 1.8s infinite;
+}
+
+.result-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
 }
 
 .rematch-btn {
-  width: 100%;
+  flex: 1;
+  padding: 0.85rem;
+  font-size: 1.05rem;
+}
+
+.exit-lobby-btn {
+  padding: 0.85rem 1.2rem;
+  font-size: 1rem;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 2px solid var(--border-creamy);
+  box-shadow: 0 3px 0 var(--border-creamy-dark);
 }
 
 /* ── Quick Vettu 3x3 Styles ── */
@@ -3864,6 +3921,28 @@
     padding: 1.5rem 1.1rem;
     max-height: 92vh;
     overflow-y: auto;
+  }
+
+  /* Mobile Victory Result Modal Card */
+  .result-modal-card {
+    max-width: 340px;
+    width: 90%;
+    padding: 1.6rem 1.25rem;
+    border-radius: 20px !important;
+  }
+
+  .result-icon-badge {
+    font-size: 2.6rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .result-title {
+    font-size: 1.35rem;
+  }
+
+  .result-scores-box {
+    gap: 1rem;
+    padding: 0.6rem 1rem;
   }
 }
 

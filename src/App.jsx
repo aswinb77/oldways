@@ -367,7 +367,6 @@ export default function App() {
           onStatusChange: ({ status, remoteProfile, selectedGame: syncGame }) => {
             if (syncGame) setSelectedGame(syncGame)
             if (status === 'connected') {
-              sounds.playMatchFound()
               setIsOpponentDisconnected(false)
               if (remoteProfile) setOpponentProfile(remoteProfile)
             } else if (status === 'disconnected') {
@@ -500,6 +499,7 @@ export default function App() {
                     onSendAction={handleSendAction}
                     lastRemoteAction={lastRemoteAction}
                     onGameOver={handleGameOver}
+                    onExitToLobby={handleExitToLobby}
                   />
                 ) : (
                   <QuickVettuBoard
@@ -513,6 +513,7 @@ export default function App() {
                     onSendAction={handleSendAction}
                     lastRemoteAction={lastRemoteAction}
                     onGameOver={handleGameOver}
+                    onExitToLobby={handleExitToLobby}
                   />
                 )}
               </div>

@@ -24,6 +24,7 @@ export default function PoojyamVettuBoard({
   onSendAction,
   lastRemoteAction,
   onGameOver,
+  onExitToLobby,
 }) {
   const [showConnInfo, setShowConnInfo] = useState(false)
   // Check if a saved paused game exists for this room
@@ -43,6 +44,7 @@ export default function PoojyamVettuBoard({
   const [completedLines, setCompletedLines] = useState(() => savedInitialState?.completedLines || [])
   const [hoveredDot, setHoveredDot] = useState(null)
   const [gameResult, setGameResult] = useState(null)
+  const [returnCountdown, setReturnCountdown] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
   const [lastMove, setLastMove] = useState(() => savedInitialState?.lastMove || null)
   const [tauntData, setTauntData] = useState(null)
@@ -53,6 +55,25 @@ export default function PoojyamVettuBoard({
   const [resetNotice, setResetNotice] = useState(null)
   const [showRejoinChoice, setShowRejoinChoice] = useState(false)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+
+  // 1v1 Online Match Auto-Return to Dashboard Countdown (7s)
+  useEffect(() => {
+    if (gameResult && mode === 'matchmaking') {
+      setReturnCountdown(7)
+      const timer = setInterval(() => {
+        setReturnCountdown((prev) => {
+          if (prev === null) return null
+          if (prev <= 1) {
+            clearInterval(timer)
+            onExitToLobby && onExitToLobby()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [gameResult, mode, onExitToLobby])
 
   const triggerTauntDisplay = useCallback((data) => {
     if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
@@ -725,14 +746,43 @@ export default function PoojyamVettuBoard({
                 </div>
               )}
 
-              <button
-                type="button"
-                className="creamy-btn btn-primary rematch-btn"
-                onClick={resetGame}
-              >
-                <RotateCcw size={17} />
-                <span>Play Again (കളിക്കാം)</span>
-              </button>
+              {mode === 'matchmaking' && returnCountdown !== null && (
+                <div className="matchmaking-countdown-pill">
+                  <span>Returning to Lobby in <strong>{returnCountdown}s</strong>...</span>
+                </div>
+              )}
+
+              <div className="result-actions-row">
+                {mode === 'matchmaking' ? (
+                  <button
+                    type="button"
+                    className="creamy-btn btn-primary rematch-btn"
+                    onClick={onExitToLobby}
+                  >
+                    <span>Return to Lobby Now</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="creamy-btn btn-primary rematch-btn"
+                      onClick={resetGame}
+                    >
+                      <RotateCcw size={17} />
+                      <span>Play Again</span>
+                    </button>
+                    {onExitToLobby && (
+                      <button
+                        type="button"
+                        className="creamy-btn exit-lobby-btn"
+                        onClick={onExitToLobby}
+                      >
+                        <span>Lobby</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

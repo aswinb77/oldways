@@ -16,6 +16,7 @@ export default function QuickVettuBoard({
   onSendAction,
   lastRemoteAction,
   onGameOver,
+  onExitToLobby,
 }) {
   const [showConnInfo, setShowConnInfo] = useState(false)
   const savedState = useMemo(() => {
@@ -30,6 +31,7 @@ export default function QuickVettuBoard({
   const [curPlayer, setCurPlayer] = useState(() => savedState?.curPlayer || 0) // 0 = Red X, 1 = Blue X
   const [winningLine, setWinningLine] = useState(null)
   const [gameResult, setGameResult] = useState(null)
+  const [returnCountdown, setReturnCountdown] = useState(null)
   const [isBotThinking, setIsBotThinking] = useState(false)
   const [tauntData, setTauntData] = useState(null)
   const tauntTimerRef = useRef(null)
@@ -39,6 +41,25 @@ export default function QuickVettuBoard({
   const [resetNotice, setResetNotice] = useState(null)
   const [showRejoinChoice, setShowRejoinChoice] = useState(false)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+
+  // 1v1 Online Match Auto-Return to Dashboard Countdown (7s)
+  useEffect(() => {
+    if (gameResult && mode === 'matchmaking') {
+      setReturnCountdown(7)
+      const timer = setInterval(() => {
+        setReturnCountdown((prev) => {
+          if (prev === null) return null
+          if (prev <= 1) {
+            clearInterval(timer)
+            onExitToLobby && onExitToLobby()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [gameResult, mode, onExitToLobby])
 
   const triggerTauntDisplay = useCallback((data) => {
     if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
@@ -474,7 +495,7 @@ export default function QuickVettuBoard({
           </div>
         )}
 
-        {/* Modal on game result */}
+        {/* Full-Screen Victory / Defeat Modal */}
         {gameResult && (
           <div className="board-modal-overlay">
             <div className={`creamy-card result-modal-card is-${gameResult.type || 'tie'}`}>
@@ -482,10 +503,72 @@ export default function QuickVettuBoard({
                 {gameResult.type === 'win' ? '🏆' : gameResult.type === 'loss' ? '💔' : '🤝'}
               </div>
               <h3 className="result-title">{gameResult.title}</h3>
-              <button type="button" className="creamy-btn btn-primary rematch-btn" onClick={resetGame}>
-                <RotateCcw size={17} />
-                <span>Play Again</span>
-              </button>
+              <p className="result-sub">
+                {gameResult.type === 'win'
+                  ? '3-in-a-row victory! Fast strategy paid off.'
+                  : gameResult.type === 'loss'
+                  ? 'Close match! Ready for a rematch?'
+                  : 'Stalemate! Both played a solid match.'}
+              </p>
+
+              <div className="result-scores-box">
+                <div className="score-team">
+                  <img src="/assets/vettu-x-red.png" alt="Red" />
+                  <span className="team-name">{p1Name}</span>
+                </div>
+                <div className="score-vs">:</div>
+                <div className="score-team">
+                  <img src="/assets/vettu-x-blue.png" alt="Blue" />
+                  <span className="team-name">{p2Name}</span>
+                </div>
+              </div>
+
+              {!currentUser.isGuest && mode === 'matchmaking' && gameResult.type === 'win' && (
+                <div className="leaderboard-earned-notice">
+                  <Sparkles size={16} color="#D97706" />
+                  <span>
+                    <strong>+25 Weekly Points</strong> earned and added to the Leaderboard!
+                  </span>
+                </div>
+              )}
+
+              {mode === 'matchmaking' && returnCountdown !== null && (
+                <div className="matchmaking-countdown-pill">
+                  <span>Returning to Lobby in <strong>{returnCountdown}s</strong>...</span>
+                </div>
+              )}
+
+              <div className="result-actions-row">
+                {mode === 'matchmaking' ? (
+                  <button
+                    type="button"
+                    className="creamy-btn btn-primary rematch-btn"
+                    onClick={onExitToLobby}
+                  >
+                    <span>Return to Lobby Now</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="creamy-btn btn-primary rematch-btn"
+                      onClick={resetGame}
+                    >
+                      <RotateCcw size={17} />
+                      <span>Play Again</span>
+                    </button>
+                    {onExitToLobby && (
+                      <button
+                        type="button"
+                        className="creamy-btn exit-lobby-btn"
+                        onClick={onExitToLobby}
+                      >
+                        <span>Lobby</span>
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}
