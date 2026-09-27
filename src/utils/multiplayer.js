@@ -2,6 +2,7 @@
 // Enforces strictly ONE host and ONE guest per room code (rejects 3rd+ guests with ROOM_FULL)
 import { Peer } from 'peerjs'
 import { supabase } from './supabaseClient.js'
+import { touchActive1v1Match } from './userStore.js'
 
 export class MultiplayerRoom {
   constructor({ roomCode, isHost, playerProfile, selectedGame, onMessage, onStatusChange }) {
@@ -295,6 +296,12 @@ export class MultiplayerRoom {
       }
     }
 
+    // ── MATCH_ENDED: Room is finished ──
+    if (data.type === 'MATCH_ENDED') {
+      this.onMessage(data)
+      return
+    }
+
     // ── 1. REJECTION: Room is full (3rd+ player trying to join) ──
     if (data.type === 'ROOM_FULL') {
       if (!this.isHost && data.targetGuestId === this.myId) {
@@ -460,6 +467,7 @@ export class MultiplayerRoom {
   }
 
   send(data) {
+    touchActive1v1Match()
     if (!data.msgId) {
       data.msgId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
     }

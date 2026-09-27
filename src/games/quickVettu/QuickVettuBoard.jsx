@@ -4,7 +4,7 @@ import confetti from 'canvas-confetti'
 import { RotateCcw, Sparkles, MessageSquare, WifiOff, Play, RefreshCw, CheckCircle, Info } from 'lucide-react'
 import { checkQuickWinner, getQuickAiMove, QUICK_LINES } from './quickVettuLogic'
 import { sounds } from '../../utils/audio'
-import { saveRoomState, loadRoomState, clearRoomState } from '../../utils/userStore'
+import { saveRoomState, loadRoomState, clearRoomState, clearActive1v1Match, markRoomClosed } from '../../utils/userStore'
 
 export default function QuickVettuBoard({
   mode = 'bot',
@@ -67,17 +67,45 @@ export default function QuickVettuBoard({
     }
   }, [gameResult, mode, onExitToLobby])
 
+  const hasOpponentConnectedInSession = useRef(!isOpponentDisconnected)
+  useEffect(() => {
+    if (!isOpponentDisconnected) {
+      hasOpponentConnectedInSession.current = true
+    }
+  }, [isOpponentDisconnected])
+
   // Disconnect Forfeit Countdown in 1v1 Matchmaking (20s limit)
   useEffect(() => {
     if (mode !== 'matchmaking' || gameResult) return
 
     let interval = null
     if (isOpponentDisconnected) {
-      setDisconnectCountdown(20)
+      const isRejoiningEmptyRoom = !hasOpponentConnectedInSession.current
+      const initialSeconds = isRejoiningEmptyRoom ? 10 : 20
+      setDisconnectCountdown(initialSeconds)
+
       interval = setInterval(() => {
         setDisconnectCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(interval)
+            if (isRejoiningEmptyRoom) {
+              // Opponent was never in this session: match has already ended! No free points!
+              const result = {
+                winner: null,
+                title: 'Match Concluded ⏱️',
+                type: 'draw',
+                subtitle: 'This match has already ended or timed out.',
+              }
+              setGameResult(result)
+              if (roomCode) {
+                clearRoomState(roomCode)
+                markRoomClosed(roomCode)
+              }
+              clearActive1v1Match()
+              return 0
+            }
+
+            // Genuine opponent disconnect during active match
             const result = {
               winner: myPlayerIndex,
               title: '🏆 Opponent Forfeited!',
@@ -85,10 +113,15 @@ export default function QuickVettuBoard({
               subtitle: 'Opponent disconnected from the duel.',
             }
             setGameResult(result)
-            if (roomCode) clearRoomState(roomCode)
+            if (roomCode) {
+              clearRoomState(roomCode)
+              markRoomClosed(roomCode)
+            }
+            clearActive1v1Match()
             sounds.playWin()
             confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } })
             onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+            onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
             return 0
           }
           return prev - 1
@@ -101,7 +134,7 @@ export default function QuickVettuBoard({
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isOpponentDisconnected, mode, gameResult, myPlayerIndex, roomCode, onGameOver])
+  }, [isOpponentDisconnected, mode, gameResult, myPlayerIndex, roomCode, onGameOver, onSendAction])
 
   // Turn Inactivity Timer in 1v1 Matchmaking (35s per turn)
   useEffect(() => {
@@ -193,7 +226,12 @@ export default function QuickVettuBoard({
     const res = checkQuickWinner(nextBoard)
 
     if (res) {
-      if (roomCode) clearRoomState(roomCode)
+      if (roomCode) {
+        clearRoomState(roomCode)
+        markRoomClosed(roomCode)
+      }
+      clearActive1v1Match()
+      onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
       if (res.winner === 'tie') {
         sounds.playOver()
         setGameResult({ winner: 'tie', title: '🤝 Tie Game!' })

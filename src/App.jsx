@@ -49,9 +49,21 @@ export default function App() {
   const [pendingJoinRoomCode, setPendingJoinRoomCode] = useState('')
   const [isMuted, setIsMuted] = useState(sounds.isMuted())
 
-  // User state
   const [user, setUser] = useState(loadUser)
   const [active1v1Match, setActive1v1Match] = useState(() => getActive1v1Match())
+
+  // Live monitor for active 1v1 match expiration in lobby:
+  // Automatically switches button back to "Start 1v1 Match" as soon as match expires or ends
+  useEffect(() => {
+    if (!active1v1Match) return
+    const interval = setInterval(() => {
+      const active = getActive1v1Match()
+      if (!active) {
+        setActive1v1Match(null)
+      }
+    }, 1500)
+    return () => clearInterval(interval)
+  }, [active1v1Match])
 
   // Clean up multiplayer room when leaving game
   const destroyMultiplayer = () => {
@@ -158,6 +170,11 @@ export default function App() {
           playerProfile: user,
           selectedGame: savedGame || selectedGame,
           onMessage: (msg) => {
+            if (msg && msg.type === 'MATCH_ENDED') {
+              clearActive1v1Match()
+              setActive1v1Match(null)
+              if (msg.roomCode) markRoomClosed(msg.roomCode)
+            }
             setLastRemoteAction(msg)
           },
           onStatusChange: ({ status, remoteProfile }) => {
@@ -262,7 +279,9 @@ export default function App() {
       playerProfile: hostUser,
       selectedGame,
       onMessage: (msg) => {
-        if (msg && msg.type === 'ROOM_CLOSED') {
+        if (msg && (msg.type === 'ROOM_CLOSED' || msg.type === 'MATCH_ENDED')) {
+          clearActive1v1Match()
+          setActive1v1Match(null)
           handleRemoteRoomClosed(msg)
           return
         }
@@ -310,7 +329,9 @@ export default function App() {
       playerProfile: guestUser,
       selectedGame,
       onMessage: (msg) => {
-        if (msg && msg.type === 'ROOM_CLOSED') {
+        if (msg && (msg.type === 'ROOM_CLOSED' || msg.type === 'MATCH_ENDED')) {
+          clearActive1v1Match()
+          setActive1v1Match(null)
           handleRemoteRoomClosed(msg)
           return
         }
@@ -475,6 +496,11 @@ export default function App() {
           playerProfile: user,
           selectedGame: matchGame || selectedGame,
           onMessage: (msg) => {
+            if (msg && msg.type === 'MATCH_ENDED') {
+              clearActive1v1Match()
+              setActive1v1Match(null)
+              if (msg.roomCode) markRoomClosed(msg.roomCode)
+            }
             setLastRemoteAction(msg)
           },
           onStatusChange: ({ status, remoteProfile, selectedGame: syncGame }) => {
@@ -512,7 +538,18 @@ export default function App() {
 
   // Rejoin an active 1v1 match if user accidentally hit browser back or refreshed
   const handleRejoin1v1Match = (matchToRejoin) => {
-    const target = matchToRejoin || active1v1Match
+    // Validate that the match is still active and has not expired or closed
+    const validActive = getActive1v1Match()
+    if (!validActive || !validActive.roomCode || isRoomClosed(validActive.roomCode)) {
+      clearActive1v1Match()
+      setActive1v1Match(null)
+      setRoomExpiredNotice({
+        message: 'This match has already ended or timed out.',
+      })
+      return
+    }
+
+    const target = matchToRejoin || validActive
     if (!target || !target.roomCode) return
 
     sounds.playClick()
@@ -537,6 +574,11 @@ export default function App() {
       playerProfile: user,
       selectedGame: target.game || selectedGame,
       onMessage: (msg) => {
+        if (msg && msg.type === 'MATCH_ENDED') {
+          clearActive1v1Match()
+          setActive1v1Match(null)
+          if (msg.roomCode) markRoomClosed(msg.roomCode)
+        }
         setLastRemoteAction(msg)
       },
       onStatusChange: ({ status, remoteProfile }) => {

@@ -171,9 +171,21 @@ export function saveActive1v1Match(match) {
   try {
     const payload = {
       ...match,
-      savedAt: Date.now(),
+      savedAt: match.savedAt || Date.now(),
+      lastActiveAt: Date.now(),
     }
     localStorage.setItem('pv_active_1v1_match', JSON.stringify(payload))
+  } catch (e) {}
+}
+
+export function touchActive1v1Match() {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = localStorage.getItem('pv_active_1v1_match')
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    parsed.lastActiveAt = Date.now()
+    localStorage.setItem('pv_active_1v1_match', JSON.stringify(parsed))
   } catch (e) {}
 }
 
@@ -183,8 +195,9 @@ export function getActive1v1Match() {
     const raw = localStorage.getItem('pv_active_1v1_match')
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    // Matches older than 15 minutes or closed rooms expire
-    if (!parsed.roomCode || isRoomClosed(parsed.roomCode) || Date.now() - (parsed.savedAt || 0) > 15 * 60 * 1000) {
+    const elapsed = Date.now() - (parsed.lastActiveAt || parsed.savedAt || 0)
+    // Matches older than 35 seconds without active heartbeat, or closed rooms, are expired!
+    if (!parsed.roomCode || isRoomClosed(parsed.roomCode) || elapsed > 35 * 1000) {
       localStorage.removeItem('pv_active_1v1_match')
       return null
     }
