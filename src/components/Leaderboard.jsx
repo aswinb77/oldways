@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Trophy, Flame, Medal, Clock, ShieldCheck, Sparkles, LogIn, RefreshCw, Radio } from 'lucide-react'
+import { Trophy, Flame, Medal, Clock, ShieldCheck, Sparkles, LogIn, RefreshCw, Radio, Info, X } from 'lucide-react'
 import { loadLeaderboard, saveLeaderboard, getWeeklyResetTime } from '../utils/userStore'
 import { fetchGlobalLeaderboard, subscribeToLeaderboard } from '../utils/supabaseClient'
 
@@ -7,6 +7,7 @@ export default function Leaderboard({ user, onOpenAuth }) {
   const [leaderboard, setLeaderboard] = useState(() => loadLeaderboard())
   const [timeLeft, setTimeLeft] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   const refreshFromCloud = useCallback(async () => {
     setIsSyncing(true)
@@ -42,17 +43,17 @@ export default function Leaderboard({ user, onOpenAuth }) {
 
   return (
     <div className="leaderboard-view">
-      {/* Header Banner */}
-      <div className="creamy-card leaderboard-banner">
+      {/* Header Banner - Minimal with (i) info modal */}
+      <div className="creamy-card leaderboard-banner minimal-leaderboard-banner">
         <div className="banner-badge">
-          <Trophy size={36} color="#E69D00" />
+          <Trophy size={32} color="#E69D00" />
         </div>
         <div className="banner-content">
           <div className="banner-title-row">
-            <h1 className="banner-title">Weekly Arena Leaderboard</h1>
+            <h1 className="banner-title">Weekly Leaderboard</h1>
             <div className="reset-pill">
-              <Clock size={15} />
-              <span>Resets in: <strong>{timeLeft}</strong></span>
+              <Clock size={14} />
+              <span>Resets: <strong>{timeLeft}</strong></span>
             </div>
             <button
               type="button"
@@ -60,16 +61,48 @@ export default function Leaderboard({ user, onOpenAuth }) {
               onClick={refreshFromCloud}
               title="Click to refresh cloud rankings"
             >
-              <RefreshCw size={13} className={isSyncing ? 'spin-anim' : ''} />
+              <RefreshCw size={12} className={isSyncing ? 'spin-anim' : ''} />
               <span>Live Cloud</span>
             </button>
+            <button
+              type="button"
+              className="info-circle-btn"
+              onClick={() => setShowInfo(true)}
+              title="Scoring Rules"
+              aria-label="Scoring Rules"
+            >
+              <Info size={16} />
+            </button>
           </div>
-          <p className="banner-desc">
-            The Weekly Leaderboard is determined <strong>solely by 1v1 Online Matchmaking</strong> duels! Logged-in players earn 
-            <strong> +25 pts</strong> per online win (+5 pts dominance bonus) to climb the ladder.
-          </p>
         </div>
       </div>
+
+      {/* Rules Info Modal (opened via (i)) */}
+      {showInfo && (
+        <div className="creamy-modal-overlay" onClick={() => setShowInfo(false)}>
+          <div className="creamy-modal-content rules-info-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rules-modal-header">
+              <div className="rules-icon-title">
+                <Trophy size={20} color="#D97706" />
+                <h3>Leaderboard Scoring</h3>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowInfo(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <ul className="rules-bullets">
+              <li><strong>+25 pts</strong> per 1v1 Online Match win.</li>
+              <li><strong>+5 pts</strong> Dominance bonus (clean sweep).</li>
+              <li>Points are earned exclusively in <strong>Ranked 1v1 Online Duels</strong>.</li>
+              <li>Leaderboard resets weekly every Monday at 00:00 UTC.</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Guest Notice if user is not logged in */}
       {user.isGuest && (

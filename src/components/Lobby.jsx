@@ -5,13 +5,14 @@ import {
   Share2,
   ArrowRight,
   Play,
-  Sparkles,
   Bot,
   Swords,
   Shield,
   Flame,
-  Gamepad2,
   Trophy,
+  Info,
+  X,
+  Sparkles,
 } from 'lucide-react'
 
 export default function Lobby({
@@ -27,6 +28,7 @@ export default function Lobby({
   const [selectedBotDiff, setSelectedBotDiff] = useState('insane')
   const [joinCodeInput, setJoinCodeInput] = useState('')
   const [showJoinInput, setShowJoinInput] = useState(false)
+  const [showStakesInfo, setShowStakesInfo] = useState(false)
 
   const handleJoinSubmit = (e) => {
     e.preventDefault()
@@ -36,54 +38,104 @@ export default function Lobby({
 
   return (
     <div className="lobby-container">
-      {/* ── 1. Tactical Game Arena Switcher ── */}
-      <div className="game-select-strip">
+      {/* ── 1. Horizontal Square Game Tiles with SVG Backgrounds ── */}
+      <div className="game-squares-strip">
+        {/* Square 1: Poojyam Vettu (55 Dots) */}
         <button
           type="button"
-          className={`game-pill-btn ${selectedGame === 'poojyam' ? 'is-active' : ''}`}
+          className={`game-square-card ${selectedGame === 'poojyam' ? 'is-active' : ''}`}
           onClick={() => setSelectedGame('poojyam')}
         >
-          <div className="game-pill-header">
-            <span className="game-pill-badge">FLAGSHIP CLASSIC</span>
-            <span className="game-pill-dot" />
+          {/* Stylized 55-Dots Triangle SVG Background */}
+          <svg className="square-bg-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="44" cy="20" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="68" cy="20" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="92" cy="20" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="116" cy="20" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+
+            <circle cx="20" cy="44" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="44" cy="44" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="68" cy="44" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="92" cy="44" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+
+            <circle cx="20" cy="68" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="44" cy="68" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="68" cy="68" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+
+            <circle cx="20" cy="92" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+            <circle cx="44" cy="92" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+
+            <circle cx="20" cy="116" r="4.5" fill="#E25B45" fillOpacity="0.22" />
+
+            {/* Cut line stroke */}
+            <line x1="12" y1="124" x2="124" y2="12" stroke="#DC2626" strokeWidth="3" strokeDasharray="5 5" strokeOpacity="0.45" />
+          </svg>
+
+          <div className="square-content">
+            <span className="square-badge red-badge">55 Dots</span>
+            <div className="square-title-wrap">
+              <span className="square-title">Poojyam Vettu</span>
+              <span className="square-sub">പൂജ്യം വെട്ട് · Classic</span>
+            </div>
           </div>
-          <span className="game-pill-title">Poojyam Vettu (പൂജ്യം വെട്ട്)</span>
-          <span className="game-pill-sub">55 Strategic Dots · 27 Cut Lines</span>
+          <span className="square-active-indicator" />
         </button>
 
+        {/* Square 2: Quick Vettu (3x3 Fast) */}
         <button
           type="button"
-          className={`game-pill-btn ${selectedGame === 'quick' ? 'is-active' : ''}`}
+          className={`game-square-card ${selectedGame === 'quick' ? 'is-active' : ''}`}
           onClick={() => setSelectedGame('quick')}
         >
-          <div className="game-pill-header">
-            <span className="game-pill-badge fast-badge">BLITZ SHOWDOWN</span>
-            <span className="game-pill-dot" />
+          {/* Stylized 3x3 Grid SVG Background */}
+          <svg className="square-bg-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="50" y1="15" x2="50" y2="125" stroke="#2563EB" strokeWidth="3" strokeOpacity="0.2" strokeLinecap="round" />
+            <line x1="90" y1="15" x2="90" y2="125" stroke="#2563EB" strokeWidth="3" strokeOpacity="0.2" strokeLinecap="round" />
+            <line x1="15" y1="50" x2="125" y2="50" stroke="#2563EB" strokeWidth="3" strokeOpacity="0.2" strokeLinecap="round" />
+            <line x1="15" y1="90" x2="125" y2="90" stroke="#2563EB" strokeWidth="3" strokeOpacity="0.2" strokeLinecap="round" />
+
+            {/* X symbol */}
+            <path d="M25 25L39 39M39 25L25 39" stroke="#E25B45" strokeWidth="3.5" strokeLinecap="round" strokeOpacity="0.4" />
+            {/* O symbol */}
+            <circle cx="70" cy="70" r="12" stroke="#2563EB" strokeWidth="3.5" strokeOpacity="0.4" />
+            {/* Winning line */}
+            <line x1="20" y1="20" x2="120" y2="120" stroke="#F59E0B" strokeWidth="3" strokeDasharray="4 4" strokeOpacity="0.45" />
+          </svg>
+
+          <div className="square-content">
+            <span className="square-badge blue-badge">3x3 Blitz</span>
+            <div className="square-title-wrap">
+              <span className="square-title">Quick Vettu</span>
+              <span className="square-sub">3-in-a-Row · 60s</span>
+            </div>
           </div>
-          <span className="game-pill-title">Quick Vettu (3x3 Fast)</span>
-          <span className="game-pill-sub">3 In-a-Row · 60s Rapid Blitz</span>
+          <span className="square-active-indicator" />
         </button>
       </div>
 
-      {/* ── 2. Hero 1v1 Online Battle Centerpiece (Game Launcher) ── */}
-      <div className="arcade-battle-hero">
+      {/* ── 2. Minimal Battle Stage (1v1 Matchmaking) ── */}
+      <div className="arcade-battle-hero minimal-battle-hero">
         <div className="hero-top-strip">
-          <div className="hero-live-tag">
+          <div className="hero-stakes-badge single-stakes-pill">
             <span className="live-dot" />
-            <span>LIVE 1v1 ARENA</span>
-          </div>
-          <div className="hero-stakes-badge">
-            <Sparkles size={14} color="#D97706" />
-            <span>
-              {user.isGuest ? 'Casual 1v1 Duel' : 'Ranked Duel · +25 Weekly Pts on Win'}
-            </span>
+            <span>{user.isGuest ? 'Casual 1v1' : 'Ranked 1v1'}</span>
+            <button
+              type="button"
+              className="info-circle-btn sm-info-btn"
+              onClick={() => setShowStakesInfo(true)}
+              title="1v1 Match Rules"
+              aria-label="Match Rules"
+            >
+              <Info size={13} />
+            </button>
           </div>
         </div>
 
-        {/* Dynamic 1v1 Versus Showcase */}
-        <div className="hero-versus-stage">
-          {/* Player Fighter Card */}
-          <div className="fighter-pod player-pod">
+        {/* 1v1 Versus Showcase */}
+        <div className="hero-versus-stage minimal-versus-stage">
+          {/* Player Pod */}
+          <div className="fighter-pod">
             <div className="fighter-avatar-frame">
               <img
                 src={user.avatar || '/assets/avatar-red.png'}
@@ -91,27 +143,22 @@ export default function Lobby({
                 className="fighter-avatar"
               />
               <span className="fighter-badge-icon">
-                <Shield size={14} color="#FFF" />
+                <Shield size={13} color="#FFF" />
               </span>
             </div>
-            <div className="fighter-details">
-              <span className="fighter-name">{user.username}</span>
-              <span className="fighter-tier">
-                {user.isGuest ? 'Guest Fighter' : `${user.badge || 'Bronze'} · ${user.points || 0} pts`}
-              </span>
-            </div>
+            <span className="fighter-name">{user.username}</span>
           </div>
 
-          {/* Epic VS Clash Emblem */}
+          {/* VS Emblem */}
           <div className="versus-clash-emblem">
             <div className="clash-ring">
-              <Swords size={26} className="clash-swords-icon" />
+              <Swords size={22} />
             </div>
             <span className="clash-vs-text">VS</span>
           </div>
 
-          {/* Opponent Mystery Fighter Card */}
-          <div className="fighter-pod opponent-pod">
+          {/* Opponent Mystery Pod */}
+          <div className="fighter-pod">
             <div className="fighter-avatar-frame mystery-frame">
               <img
                 src="/assets/avatar-orange.png"
@@ -120,56 +167,54 @@ export default function Lobby({
               />
               <span className="fighter-badge-icon mystery-badge">?</span>
             </div>
-            <div className="fighter-details">
-              <span className="fighter-name">Challenger</span>
-              <span className="fighter-tier">Online Matchmaking</span>
-            </div>
+            <span className="fighter-name">Challenger</span>
           </div>
         </div>
 
-        {/* Big 3D Tactile Battle Action Button */}
+        {/* Big Action Button - Minimal & Punchy */}
         <button
           type="button"
-          className="arcade-launch-btn"
+          className="arcade-launch-btn minimal-launch-btn"
           onClick={onStartMatchmaking}
         >
-          <div className="launch-btn-inner">
-            <div className="launch-icon-box">
-              <Zap size={22} fill="#FFF" color="#FFF" />
-            </div>
-            <div className="launch-text-box">
-              <span className="launch-title">FIND 1v1 OPPONENT</span>
-              <span className="launch-sub">Instant matchmaking across the network</span>
-            </div>
-          </div>
+          <Play size={20} fill="#FFF" color="#FFF" />
+          <span>Start 1v1 Match</span>
         </button>
 
-        <div className="hero-bottom-ticker">
-          <span>⚡ Real-time Peer Connection</span>
-          <span className="ticker-dot">•</span>
-          <span>Average Search: ~3s</span>
-          <span className="ticker-dot">•</span>
-          <span>Fair Elo Pairing</span>
-        </div>
-      </div>
-
-      {/* ── 3. Dual Arcade Consoles: Friend Duel & Bot Dojo ── */}
-      <div className="arcade-consoles-grid">
-        {/* Console 1: Private Friend Room */}
-        <div className="arcade-console-card friend-console">
-          <div className="console-header">
-            <div className="console-icon blue-console-icon">
-              <Users size={22} color="#FFF" />
-            </div>
-            <div className="console-title-wrap">
-              <span className="console-badge-tag blue-tag">PRIVATE DUEL</span>
-              <h3 className="console-title">Play with a Friend</h3>
+        {/* Stakes Info Modal (opened via (i)) */}
+        {showStakesInfo && (
+          <div className="creamy-modal-overlay" onClick={() => setShowStakesInfo(false)}>
+            <div className="creamy-modal-content rules-info-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="rules-modal-header">
+                <h3>1v1 Online Matchmaking</h3>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setShowStakesInfo(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <ul className="rules-bullets">
+                <li>Instant peer-to-peer matchmaking with live online players.</li>
+                <li>{user.isGuest ? 'Log in to record wins on the global weekly leaderboard.' : 'Winners earn +25 points towards the weekly leaderboard.'}</li>
+                <li>Average matchmaking queue time is ~3 seconds.</li>
+              </ul>
             </div>
           </div>
+        )}
+      </div>
 
-          <p className="console-desc">
-            Host a private room to send an invite link or room code directly to your friend.
-          </p>
+      {/* ── 3. Dual Arcade Consoles: Friend & Bot (Clean & Minimal) ── */}
+      <div className="arcade-consoles-grid">
+        {/* Console 1: Play with Friend */}
+        <div className="arcade-console-card minimal-console-card">
+          <div className="console-header">
+            <div className="console-icon blue-console-icon">
+              <Users size={20} color="#FFF" />
+            </div>
+            <h3 className="console-title">Play with Friend</h3>
+          </div>
 
           {!showJoinInput ? (
             <div className="console-actions">
@@ -178,8 +223,8 @@ export default function Lobby({
                 className="creamy-btn btn-blue console-btn-primary"
                 onClick={onCreateFriendRoom}
               >
-                <Share2 size={17} />
-                <span>Create Battle Room</span>
+                <Share2 size={16} />
+                <span>Create Room</span>
               </button>
 
               <button
@@ -187,7 +232,7 @@ export default function Lobby({
                 className="creamy-btn console-btn-secondary"
                 onClick={() => setShowJoinInput(true)}
               >
-                <span>Have a Code? Join Room</span>
+                <span>Join with Code</span>
               </button>
             </div>
           ) : (
@@ -196,7 +241,7 @@ export default function Lobby({
                 <input
                   type="text"
                   className="creamy-input arcade-code-input"
-                  placeholder="CODE: PV-8492"
+                  placeholder="PV-XXXX"
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value)}
                   autoFocus
@@ -210,34 +255,26 @@ export default function Lobby({
                 className="cancel-join-link"
                 onClick={() => setShowJoinInput(false)}
               >
-                ← Back to create room
+                ← Back
               </button>
             </form>
           )}
         </div>
 
-        {/* Console 2: AI Sparring Dojo */}
-        <div className="arcade-console-card bot-console">
+        {/* Console 2: Play with Bot */}
+        <div className="arcade-console-card minimal-console-card">
           <div className="console-header">
             <div className="console-icon gold-console-icon">
-              <Bot size={22} color="#FFF" />
+              <Bot size={20} color="#FFF" />
             </div>
-            <div className="console-title-wrap">
-              <span className="console-badge-tag gold-tag">OFFLINE TRAINING</span>
-              <h3 className="console-title">Bot Sparring Dojo</h3>
-            </div>
+            <h3 className="console-title">Play with Bot</h3>
           </div>
 
-          <p className="console-desc">
-            Sharpen your line-cutting and tactical blocking skills against our heuristic AI.
-          </p>
-
-          {/* Difficulty Chips */}
           <div className="bot-diff-strip">
             {[
               { id: 'casual', label: 'Casual' },
               { id: 'tactical', label: 'Tactical' },
-              { id: 'insane', label: 'Insane IQ 🔥' },
+              { id: 'insane', label: 'Insane 🔥' },
             ].map((d) => (
               <button
                 key={d.id}
@@ -255,50 +292,41 @@ export default function Lobby({
             className="creamy-btn btn-gold console-btn-primary"
             onClick={() => onStartBotGame(selectedBotDiff)}
           >
-            <Play size={17} fill="#FFF" />
-            <span>Fight {selectedBotDiff.toUpperCase()} Bot</span>
+            <Play size={16} fill="#FFF" />
+            <span>Play vs Bot</span>
           </button>
         </div>
       </div>
 
-      {/* ── 4. Gamer HUD / Season Pass Banner ── */}
+      {/* ── 4. Minimal Player HUD Bar ── */}
       {user.isGuest ? (
-        <div className="arcade-guest-banner">
+        <div className="arcade-guest-banner minimal-guest-strip">
           <div className="guest-banner-left">
-            <img src="/assets/aswin-duo.png" alt="Mascot" className="guest-mascot" />
-            <div className="guest-banner-text">
-              <h4 className="guest-banner-title">Compete on the Weekly Leaderboard!</h4>
-              <p className="guest-banner-sub">
-                You're in Guest Mode. Register a unique handle to save your stats and climb the ranks.
-              </p>
-            </div>
+            <Sparkles size={18} color="#D97706" />
+            <span className="guest-mini-text">Guest Mode · Log in to earn weekly points</span>
           </div>
           <button
             type="button"
             className="creamy-btn btn-primary guest-cta-btn"
             onClick={onOpenAuth}
           >
-            <Sparkles size={16} />
-            <span>Create Arena ID</span>
+            Login
           </button>
         </div>
       ) : (
-        <div className="arcade-gamer-hud">
+        <div className="arcade-gamer-hud minimal-gamer-hud">
           <div className="hud-left">
             <img src={user.avatar} alt={user.username} className="hud-avatar" />
-            <div className="hud-info">
-              <span className="hud-greeting">Player Logged In: <strong>{user.username}</strong></span>
-              <span className="hud-sub">Badge: {user.badge || 'Bronze'} · All 1v1 wins recorded</span>
-            </div>
+            <span className="hud-name">{user.username}</span>
           </div>
           <div className="hud-stats-pills">
             <div className="hud-stat-chip">
-              <Trophy size={14} color="#D97706" />
+              <Trophy size={13} color="#D97706" />
               <span>{user.points || 0} pts</span>
             </div>
             <div className="hud-stat-chip">
-              <Flame size={14} color="#DC2626" />
-              <span>{user.streak || 0} streak</span>
+              <Flame size={13} color="#DC2626" />
+              <span>{user.streak || 0} 🔥</span>
             </div>
           </div>
         </div>

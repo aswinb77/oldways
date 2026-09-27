@@ -11,7 +11,7 @@ import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClo
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
-import { ArrowLeft, Sparkles, Loader2, DoorClosed } from 'lucide-react'
+import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X } from 'lucide-react'
 import './App.css'
 
 export default function App() {
@@ -20,6 +20,7 @@ export default function App() {
   const [gameMode, setGameMode] = useState('bot') // 'bot' | 'friend' | 'matchmaking'
   const [botDifficulty, setBotDifficulty] = useState('insane')
   const [inGame, setInGame] = useState(false)
+  const [showConnectTips, setShowConnectTips] = useState(false)
 
   // Multiplayer state
   const [roomCode, setRoomCode] = useState('')
@@ -512,22 +513,25 @@ export default function App() {
               </div>
             ) : isConnectingGuest ? (
               /* Waiting state for joining friend until host is ready */
-              <div className="creamy-card guest-connecting-card">
+              <div className="creamy-card guest-connecting-card minimal-connecting-card">
                 <div className="connecting-badge">
                   <Loader2 size={36} className="spin-anim" color="#2563EB" />
                 </div>
-                <h2 className="connecting-title">Connecting to Room {roomCode}...</h2>
-                <p className="connecting-sub">
-                  {guestStatusMsg || 'Establishing direct 1v1 connection with your friend. The game board will open as soon as both players are in the room!'}
-                </p>
-
-                <div className="connection-tips-box">
-                  <span className="tip-header">💡 Helpful tips if waiting:</span>
-                  <ul className="tip-list">
-                    <li>Make sure your friend has the room open on their screen (not minimized/asleep).</li>
-                    <li>If opened inside WhatsApp/Instagram, tap <strong>⋮</strong> in top-right and choose <strong>"Open in Chrome"</strong>.</li>
-                  </ul>
+                <div className="connecting-header-row">
+                  <h2 className="connecting-title">Connecting to Room {roomCode}</h2>
+                  <button
+                    type="button"
+                    className="info-circle-btn"
+                    onClick={() => setShowConnectTips(true)}
+                    title="Connection Tips"
+                    aria-label="Connection Tips"
+                  >
+                    <Info size={16} />
+                  </button>
                 </div>
+                <p className="connecting-sub">
+                  {guestStatusMsg || 'Waiting for opponent to connect...'}
+                </p>
 
                 <div className="guest-conn-actions">
                   <button
@@ -535,7 +539,7 @@ export default function App() {
                     className="creamy-btn btn-primary retry-conn-btn"
                     onClick={handleRetryGuestConnection}
                   >
-                    <span>🔄 Retry Connection</span>
+                    <span>🔄 Retry</span>
                   </button>
                   <button
                     type="button"
@@ -545,6 +549,23 @@ export default function App() {
                     Cancel
                   </button>
                 </div>
+
+                {showConnectTips && (
+                  <div className="creamy-modal-overlay" onClick={() => setShowConnectTips(false)}>
+                    <div className="creamy-modal-content rules-info-modal" onClick={(e) => e.stopPropagation()}>
+                      <div className="rules-modal-header">
+                        <h3>Connection Tips</h3>
+                        <button type="button" className="modal-close-btn" onClick={() => setShowConnectTips(false)}>
+                          <X size={18} />
+                        </button>
+                      </div>
+                      <ul className="rules-bullets">
+                        <li>Make sure your friend has the room open on their screen.</li>
+                        <li>If opened inside WhatsApp or Instagram, tap <strong>⋮</strong> and choose <strong>"Open in Chrome"</strong>.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <Lobby

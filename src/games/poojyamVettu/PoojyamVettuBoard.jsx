@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle, Play, RefreshCw } from 'lucide-react'
+import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle, Play, RefreshCw, Info } from 'lucide-react'
 import {
   N,
   TOTAL_DOTS,
@@ -25,6 +25,7 @@ export default function PoojyamVettuBoard({
   lastRemoteAction,
   onGameOver,
 }) {
+  const [showConnInfo, setShowConnInfo] = useState(false)
   // Check if a saved paused game exists for this room
   const savedInitialState = useMemo(() => {
     if (mode === 'friend' && roomCode) {
@@ -381,18 +382,25 @@ export default function PoojyamVettuBoard({
     <div className="poojyam-board-wrapper">
       {/* Opponent Disconnected / Connection Error Waiting Banner */}
       {isOpponentDisconnected && (
-        <div className="reconnect-alert-banner connection-waiting-banner">
-          <div className="conn-spin-wrap">
-            <RefreshCw size={22} className="spin-slow" />
+        <div className="reconnect-alert-banner connection-waiting-banner minimal-conn-banner">
+          <div className="conn-main-row">
+            <RefreshCw size={15} className="spin-slow" />
+            <span className="conn-status-text">Friend Disconnected · Game Paused</span>
+            <button
+              type="button"
+              className="info-circle-btn sm-info-btn"
+              onClick={() => setShowConnInfo(!showConnInfo)}
+              title="Connection Details"
+              aria-label="Connection Details"
+            >
+              <Info size={13} />
+            </button>
           </div>
-          <div className="conn-text-wrap">
-            <div className="conn-main-title">
-              Connection Error: Friend Disconnected
+          {showConnInfo && (
+            <div className="conn-info-popover">
+              Waiting for your friend to re-open the room. Once reconnected, you can resume immediately!
             </div>
-            <div className="conn-sub-desc">
-              Game is paused. As soon as your friend re-opens the link or reconnects, you will get the choice to resume or start over!
-            </div>
-          </div>
+          )}
         </div>
       )}
 
