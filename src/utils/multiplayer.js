@@ -43,9 +43,15 @@ export class MultiplayerRoom {
           this.handleIncomingRaw(payload, 'supabase')
         })
 
+        this.supabaseChannelSubscribed = false
         this.supabaseChannel.subscribe((status) => {
           if (this.isDestroyed) return
           if (status === 'SUBSCRIBED') {
+            this.supabaseChannelSubscribed = true
+            if (this.peerFallbackTimer) {
+              clearTimeout(this.peerFallbackTimer)
+              this.peerFallbackTimer = null
+            }
             this.broadcastPresence()
             if (!this.connected) {
               this.onStatusChange({
@@ -73,7 +79,40 @@ export class MultiplayerRoom {
       }
     }
 
-    // 3. Setup WebRTC via PeerJS as secondary peer-to-peer channel
+    // 3. Setup WebRTC via PeerJS ONLY as fallback when Supabase is not configured or unavailable
+    // This prevents 0.peerjs.com rate-limits and socket exhaustion under high CCU
+    if (!supabase) {
+      this.initPeerJsFallback()
+    } else {
+      this.peerFallbackTimer = setTimeout(() => {
+        if (!this.connected && !this.supabaseChannelSubscribed && !this.isDestroyed) {
+          this.initPeerJsFallback()
+        }
+      }, 4000)
+    }
+
+    // Auto-recover if tab wakes up from mobile background/sleep
+    if (typeof document !== 'undefined') {
+      this.visibilityHandler = () => {
+        if (document.visibilityState === 'visible' && !this.isDestroyed) {
+          if (this.peer && this.peer.disconnected) {
+            try { this.peer.reconnect() } catch (e) {}
+          }
+          if (!this.isHost && !this.connected) {
+            this.connectToPeer(`pv-host-${this.cleanId}`)
+          }
+          this.broadcastPresence()
+        }
+      }
+      document.addEventListener('visibilitychange', this.visibilityHandler)
+    }
+
+    this.startPresenceLoop()
+  }
+
+  initPeerJsFallback() {
+    if (this.peer || this.isDestroyed) return
+
     const peerId = this.isHost
       ? `pv-host-${this.cleanId}`
       : `pv-guest-${this.cleanId}-${Math.random().toString(36).substring(2, 7)}`
@@ -110,7 +149,6 @@ export class MultiplayerRoom {
       })
 
       this.peer.on('error', (err) => {
-        // Silently tolerate WebRTC issues since Supabase Realtime handles online multiplayer
         if (err.type === 'unavailable-id' && this.isHost) {
           this.onStatusChange({ status: 'ready_local', message: 'Room active' })
         }
@@ -118,24 +156,6 @@ export class MultiplayerRoom {
     } catch (err) {
       console.warn('PeerJS init note:', err)
     }
-
-    // Auto-recover if tab wakes up from mobile background/sleep
-    if (typeof document !== 'undefined') {
-      this.visibilityHandler = () => {
-        if (document.visibilityState === 'visible' && !this.isDestroyed) {
-          if (this.peer && this.peer.disconnected) {
-            try { this.peer.reconnect() } catch (e) {}
-          }
-          if (!this.isHost && !this.connected) {
-            this.connectToPeer(`pv-host-${this.cleanId}`)
-          }
-          this.broadcastPresence()
-        }
-      }
-      document.addEventListener('visibilitychange', this.visibilityHandler)
-    }
-
-    this.startPresenceLoop()
   }
 
   startGuestConnectLoop() {
@@ -352,6 +372,10 @@ export class MultiplayerRoom {
 
   destroy() {
     this.isDestroyed = true
+    if (this.peerFallbackTimer) {
+      clearTimeout(this.peerFallbackTimer)
+      this.peerFallbackTimer = null
+    }
     if (this.guestRetryTimer) {
       clearInterval(this.guestRetryTimer)
       this.guestRetryTimer = null

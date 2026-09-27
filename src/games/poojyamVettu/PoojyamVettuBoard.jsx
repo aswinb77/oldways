@@ -55,6 +55,8 @@ export default function PoojyamVettuBoard({
   const [pendingResetIncoming, setPendingResetIncoming] = useState(null)
   const [resetNotice, setResetNotice] = useState(null)
   const [showRejoinChoice, setShowRejoinChoice] = useState(false)
+  const [disconnectCountdown, setDisconnectCountdown] = useState(20)
+  const [turnSecondsLeft, setTurnSecondsLeft] = useState(35)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
 
   // 1v1 Online Match Auto-Return to Dashboard Countdown (7s)
@@ -75,6 +77,84 @@ export default function PoojyamVettuBoard({
       return () => clearInterval(timer)
     }
   }, [gameResult, mode, onExitToLobby])
+
+  // Disconnect Forfeit Countdown in 1v1 Matchmaking (20s limit)
+  useEffect(() => {
+    if (mode !== 'matchmaking' || gameResult) return
+
+    let interval = null
+    if (isOpponentDisconnected) {
+      setDisconnectCountdown(20)
+      interval = setInterval(() => {
+        setDisconnectCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            const result = {
+              winner: myPlayerIndex,
+              title: '🏆 Opponent Forfeited!',
+              type: 'win',
+              subtitle: 'Opponent disconnected from the duel.',
+            }
+            setGameResult(result)
+            if (roomCode) clearRoomState(roomCode)
+            sounds.playWin()
+            confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
+            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      setDisconnectCountdown(20)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isOpponentDisconnected, mode, gameResult, myPlayerIndex, roomCode, onGameOver])
+
+  // Turn Inactivity Timer in 1v1 Matchmaking (35s per turn)
+  useEffect(() => {
+    if (mode !== 'matchmaking' || gameResult || isOpponentDisconnected) return
+
+    setTurnSecondsLeft(35)
+    const interval = setInterval(() => {
+      setTurnSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          if (isMyTurn) {
+            const result = {
+              winner: myPlayerIndex === 0 ? 1 : 0,
+              title: '⏳ Turn Timed Out',
+              type: 'loss',
+              subtitle: 'You ran out of time on your turn.',
+            }
+            setGameResult(result)
+            if (roomCode) clearRoomState(roomCode)
+            sounds.playOver()
+            onGameOver && onGameOver({ isWin: false, scoreDiff: 1 })
+          } else {
+            const result = {
+              winner: myPlayerIndex,
+              title: '🏆 Opponent Timed Out!',
+              type: 'win',
+              subtitle: 'Opponent was inactive on their turn.',
+            }
+            setGameResult(result)
+            if (roomCode) clearRoomState(roomCode)
+            sounds.playWin()
+            confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
+            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [curPlayer, isOpponentDisconnected, mode, gameResult, isMyTurn, myPlayerIndex, roomCode, onGameOver])
 
   const triggerTauntDisplay = useCallback((data) => {
     if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
@@ -407,7 +487,11 @@ export default function PoojyamVettuBoard({
         <div className="reconnect-alert-banner connection-waiting-banner minimal-conn-banner">
           <div className="conn-main-row">
             <RefreshCw size={15} className="spin-slow" />
-            <span className="conn-status-text">Friend Disconnected · Game Paused</span>
+            <span className="conn-status-text">
+              {mode === 'matchmaking'
+                ? `Opponent disconnected · Forfeit win in ${disconnectCountdown}s`
+                : 'Friend Disconnected · Game Paused'}
+            </span>
             <button
               type="button"
               className="info-circle-btn sm-info-btn"
@@ -420,7 +504,9 @@ export default function PoojyamVettuBoard({
           </div>
           {showConnInfo && (
             <div className="conn-info-popover">
-              Waiting for your friend to re-open the room. Once reconnected, you can resume immediately!
+              {mode === 'matchmaking'
+                ? 'If your opponent does not reconnect within 20 seconds, you will automatically be awarded a forfeit victory.'
+                : 'Waiting for your friend to re-open the room. Once reconnected, you can resume immediately!'}
             </div>
           )}
         </div>
@@ -449,7 +535,7 @@ export default function PoojyamVettuBoard({
               </span>
               {curPlayer === 0 && (
                 <span className="turn-pulse-badge red-pulse">
-                  TURN
+                  TURN{mode === 'matchmaking' && !isOpponentDisconnected ? ` ${turnSecondsLeft}s` : ''}
                 </span>
               )}
             </div>
@@ -476,7 +562,7 @@ export default function PoojyamVettuBoard({
             <div className="player-title-row justify-end">
               {curPlayer === 1 && (
                 <span className="turn-pulse-badge blue-pulse">
-                  TURN
+                  TURN{mode === 'matchmaking' && !isOpponentDisconnected ? ` ${turnSecondsLeft}s` : ''}
                 </span>
               )}
               <span className="player-title-name">

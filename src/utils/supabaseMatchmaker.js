@@ -1,8 +1,23 @@
 import { supabase } from './supabaseClient'
 
+function hashString(str) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash |= 0
+  }
+  return hash
+}
+
+const BUCKET_COUNT = 3
+
 /**
  * Cloud-Backed 1v1 Online Matchmaker powered by Supabase Realtime Presence & Broadcast
- * Pairs any two online players across the network first-come-first-served.
+ * Optimized for 1,000 - 10,000 CCU:
+ * - Sharded pools to reduce O(N^2) presence broadcast traffic
+ * - 2-Way MATCH_OFFER -> MATCH_ACCEPT handshake to eliminate host-host race conditions
+ * - Randomized jitter on pool evaluation to prevent thundering herd
+ * - Priority matching based on search wait time (FIFO)
  */
 export class SupabaseMatchmaker {
   constructor({ user, selectedGame = 'poojyam', onMatchFound, onStatusUpdate }) {
@@ -12,10 +27,14 @@ export class SupabaseMatchmaker {
     this.onStatusUpdate = onStatusUpdate || (() => {})
 
     this.channel = null
+    this.currentBucket = Math.abs(hashString(this.user.id || 'guest')) % BUCKET_COUNT
     this.matched = false
     this.isDestroyed = false
     this.timer = null
     this.secondsElapsed = 0
+
+    this.pendingOffer = null
+    this.evalTimer = null
 
     this.init()
   }
@@ -31,14 +50,20 @@ export class SupabaseMatchmaker {
 
     this.onStatusUpdate({
       state: 'searching',
-      message: 'Entering global matchmaking pool...',
+      message: 'Entering matchmaking pool...',
       seconds: 0,
     })
 
-    // Start search elapsed timer
+    // Start search elapsed timer & fallback bucket convergence
     this.timer = setInterval(() => {
       if (this.matched || this.isDestroyed) return
       this.secondsElapsed += 1
+
+      // If waiting > 4s and in a non-zero shard, converge to primary shard b0
+      if (this.secondsElapsed === 4 && this.currentBucket !== 0) {
+        this.migrateToBucket(0)
+      }
+
       const formatted = `${Math.floor(this.secondsElapsed / 60)}:${(this.secondsElapsed % 60).toString().padStart(2, '0')}`
       this.onStatusUpdate({
         state: 'searching',
@@ -47,8 +72,20 @@ export class SupabaseMatchmaker {
       })
     }, 1000)
 
+    this.joinChannel(this.currentBucket)
+  }
+
+  joinChannel(bucketIndex) {
+    if (this.channel && supabase) {
+      try {
+        this.channel.untrack()
+        supabase.removeChannel(this.channel)
+      } catch (e) {}
+      this.channel = null
+    }
+
     try {
-      const channelName = `pv_matchmaking_${this.selectedGame}`
+      const channelName = `pv_mm_${this.selectedGame}_b${bucketIndex}`
       this.channel = supabase.channel(channelName, {
         config: {
           presence: { key: this.user.id },
@@ -56,16 +93,40 @@ export class SupabaseMatchmaker {
         },
       })
 
-      // 1. Listen for match proposals from other players
+      // 1. Listen for MATCH_OFFER
       this.channel.on('broadcast', { event: 'MATCH_OFFER' }, ({ payload }) => {
         if (this.matched || this.isDestroyed || !payload) return
 
         if (payload.guestId === this.user.id) {
+          // If we already have a pending offer as host or guest, decline
+          if (this.pendingOffer) {
+            this.channel.send({
+              type: 'broadcast',
+              event: 'MATCH_DECLINE',
+              payload: { offerId: payload.offerId, guestId: this.user.id },
+            })
+            return
+          }
+
+          // Accept offer
           this.matched = true
+          this.channel.send({
+            type: 'broadcast',
+            event: 'MATCH_ACCEPT',
+            payload: {
+              offerId: payload.offerId,
+              hostId: payload.hostId,
+              guestId: this.user.id,
+              roomCode: payload.roomCode,
+              game: payload.game || this.selectedGame,
+            },
+          })
+
+          this.onStatusUpdate({ state: 'matched', message: 'Opponent found! Entering duel...' })
           setTimeout(() => {
             this.cleanup()
           }, 400)
-          this.onStatusUpdate({ state: 'matched', message: 'Opponent found! Entering duel...' })
+
           this.onMatchFound({
             roomCode: payload.roomCode,
             isHost: false,
@@ -75,13 +136,52 @@ export class SupabaseMatchmaker {
         }
       })
 
-      // 2. Presence Sync: detect waiting players
+      // 2. Listen for MATCH_ACCEPT
+      this.channel.on('broadcast', { event: 'MATCH_ACCEPT' }, ({ payload }) => {
+        if (this.matched || this.isDestroyed || !payload) return
+
+        if (this.pendingOffer && payload.offerId === this.pendingOffer.offerId && payload.hostId === this.user.id) {
+          this.matched = true
+          if (this.pendingOffer.expireTimer) {
+            clearTimeout(this.pendingOffer.expireTimer)
+          }
+
+          const confirmedOffer = this.pendingOffer
+          this.pendingOffer = null
+
+          this.onStatusUpdate({ state: 'matched', message: 'Match confirmed! Connecting...' })
+          setTimeout(() => {
+            this.cleanup()
+          }, 400)
+
+          this.onMatchFound({
+            roomCode: confirmedOffer.roomCode,
+            isHost: true,
+            opponentProfile: confirmedOffer.opponent,
+            selectedGame: this.selectedGame,
+          })
+        }
+      })
+
+      // 3. Listen for MATCH_DECLINE
+      this.channel.on('broadcast', { event: 'MATCH_DECLINE' }, ({ payload }) => {
+        if (!payload || !this.pendingOffer) return
+        if (payload.offerId === this.pendingOffer.offerId) {
+          if (this.pendingOffer.expireTimer) {
+            clearTimeout(this.pendingOffer.expireTimer)
+          }
+          this.pendingOffer = null
+          this.schedulePoolEvaluation(100)
+        }
+      })
+
+      // 4. Presence Sync: detect waiting players
       this.channel.on('presence', { event: 'sync' }, () => {
-        this.evaluatePool()
+        this.schedulePoolEvaluation()
       })
 
       this.channel.on('presence', { event: 'join' }, () => {
-        this.evaluatePool()
+        this.schedulePoolEvaluation()
       })
 
       // Subscribe and track presence in pool
@@ -100,42 +200,85 @@ export class SupabaseMatchmaker {
         }
       })
     } catch (err) {
-      console.warn('[Matchmaker] Error initializing:', err)
+      console.warn('[Matchmaker] Error initializing shard:', err)
       this.onStatusUpdate({ state: 'error', message: 'Failed to connect to matchmaking server.' })
     }
   }
 
+  migrateToBucket(newBucket) {
+    if (this.matched || this.isDestroyed) return
+    this.currentBucket = newBucket
+    this.joinChannel(newBucket)
+  }
+
+  schedulePoolEvaluation(customJitter) {
+    if (this.matched || this.isDestroyed || this.pendingOffer) return
+
+    if (this.evalTimer) {
+      clearTimeout(this.evalTimer)
+    }
+
+    // Jitter 40ms - 150ms to break lockstep race conditions
+    const jitter = customJitter || (Math.floor(Math.random() * 110) + 40)
+    this.evalTimer = setTimeout(() => {
+      this.evaluatePool()
+    }, jitter)
+  }
+
   evaluatePool() {
-    if (this.matched || this.isDestroyed || !this.channel) return
+    if (this.matched || this.isDestroyed || this.pendingOffer || !this.channel) return
 
     const presenceState = this.channel.presenceState()
     const allKeys = Object.keys(presenceState)
 
-    // Find any opponent who is searching in this channel
-    const opponentKey = allKeys.find((key) => key !== this.user.id)
-    if (!opponentKey) return
+    // Collect all other searching players
+    const candidates = []
+    for (const key of allKeys) {
+      if (key === this.user.id) continue
+      const presences = presenceState[key]
+      if (presences && presences.length > 0) {
+        const candidate = presences[0]
+        if (candidate && candidate.userId) {
+          candidates.push(candidate)
+        }
+      }
+    }
 
-    const opponentPresences = presenceState[opponentKey]
-    if (!opponentPresences || opponentPresences.length === 0) return
+    if (candidates.length === 0) return
 
-    const opponent = opponentPresences[0]
-    if (!opponent || !opponent.userId) return
+    // Prioritize candidate waiting longest (FIFO fairness)
+    candidates.sort((a, b) => (a.searchingAt || 0) - (b.searchingAt || 0))
+    const opponent = candidates[0]
 
-    // Deterministic leader election: lexicographically smaller userId is Host
+    // Deterministic host role: lower userId acts as match offerer
     const isHost = this.user.id < opponent.userId
 
     if (isHost) {
-      this.matched = true
+      const offerId = `off_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
       const randomSuffix = Math.floor(1000 + Math.random() * 9000)
       const privateRoomCode = `MATCH-${randomSuffix}`
 
-      this.onStatusUpdate({ state: 'matched', message: 'Opponent matched! Connecting...' })
+      const expireTimer = setTimeout(() => {
+        if (this.pendingOffer && this.pendingOffer.offerId === offerId) {
+          this.pendingOffer = null
+          this.schedulePoolEvaluation(50)
+        }
+      }, 1800)
 
-      // Broadcast the match offer to the opponent
+      this.pendingOffer = {
+        offerId,
+        guestId: opponent.userId,
+        roomCode: privateRoomCode,
+        opponent,
+        expireTimer,
+      }
+
+      // Broadcast offer directly to opponent
       this.channel.send({
         type: 'broadcast',
         event: 'MATCH_OFFER',
         payload: {
+          offerId,
           roomCode: privateRoomCode,
           hostId: this.user.id,
           guestId: opponent.userId,
@@ -158,17 +301,6 @@ export class SupabaseMatchmaker {
           game: this.selectedGame,
         },
       })
-
-      setTimeout(() => {
-        this.cleanup()
-      }, 500)
-
-      this.onMatchFound({
-        roomCode: privateRoomCode,
-        isHost: true,
-        opponentProfile: opponent,
-        selectedGame: this.selectedGame,
-      })
     }
   }
 
@@ -176,6 +308,14 @@ export class SupabaseMatchmaker {
     if (this.timer) {
       clearInterval(this.timer)
       this.timer = null
+    }
+    if (this.evalTimer) {
+      clearTimeout(this.evalTimer)
+      this.evalTimer = null
+    }
+    if (this.pendingOffer?.expireTimer) {
+      clearTimeout(this.pendingOffer.expireTimer)
+      this.pendingOffer = null
     }
     if (this.channel && supabase) {
       try {
