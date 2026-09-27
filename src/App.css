@@ -1362,15 +1362,22 @@
 /* Modal Overlay on Board - Full Screen Viewport Overlay */
 .board-modal-overlay {
   position: fixed !important;
-  inset: 0 !important;
-  background: rgba(30, 21, 16, 0.72) !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: rgba(30, 21, 16, 0.75) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   padding: 1.25rem !important;
+  box-sizing: border-box !important;
   animation: fadeIn 0.22s ease-out;
 }
 

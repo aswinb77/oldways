@@ -55,9 +55,6 @@ export default function Navbar({
             >
               <Trophy size={17} />
               <span>Leaderboard</span>
-              {!user.isGuest && user.points > 0 && (
-                <span className="nav-point-badge">{user.points} pts</span>
-              )}
             </button>
           </nav>
 
@@ -115,9 +112,6 @@ export default function Navbar({
           >
             <Trophy size={16} />
             <span>Leaderboard</span>
-            {!user.isGuest && user.points > 0 && (
-              <span className="nav-point-badge">{user.points} pts</span>
-            )}
           </button>
         </div>
       </div>

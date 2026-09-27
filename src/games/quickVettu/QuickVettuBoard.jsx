@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import confetti from 'canvas-confetti'
 import { RotateCcw, Sparkles, MessageSquare, WifiOff, Play, RefreshCw, CheckCircle, Info } from 'lucide-react'
 import { checkQuickWinner, getQuickAiMove, QUICK_LINES } from './quickVettuLogic'
@@ -495,8 +496,8 @@ export default function QuickVettuBoard({
           </div>
         )}
 
-        {/* Full-Screen Victory / Defeat Modal */}
-        {gameResult && (
+        {/* Full-Screen Victory / Defeat Modal rendered via React Portal directly into body */}
+        {gameResult && typeof document !== 'undefined' && createPortal(
           <div className="board-modal-overlay">
             <div className={`creamy-card result-modal-card is-${gameResult.type || 'tie'}`}>
               <div className="result-icon-badge">
@@ -570,7 +571,8 @@ export default function QuickVettuBoard({
                 )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

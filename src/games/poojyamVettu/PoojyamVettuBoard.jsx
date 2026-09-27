@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import confetti from 'canvas-confetti'
 import { RotateCcw, Volume2, Sparkles, Trophy, Flame, Flag, MessageSquare, AlertCircle, WifiOff, CheckCircle, Play, RefreshCw, Info } from 'lucide-react'
 import {
@@ -709,8 +710,8 @@ export default function PoojyamVettuBoard({
           </div>
         )}
 
-        {/* End Game Modal Overlay */}
-        {gameResult && (
+        {/* End Game Modal Overlay rendered via React Portal directly into body */}
+        {gameResult && typeof document !== 'undefined' && createPortal(
           <div className="board-modal-overlay">
             <div className={`creamy-card result-modal-card is-${gameResult.type}`}>
               <div className="result-icon-badge">
@@ -784,7 +785,8 @@ export default function PoojyamVettuBoard({
                 )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

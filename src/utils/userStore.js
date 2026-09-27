@@ -171,7 +171,7 @@ export function loadLeaderboard() {
     const raw = localStorage.getItem('pv_leaderboard')
     if (raw) {
       const parsed = JSON.parse(raw)
-      return (parsed || []).filter((p) => p && p.id && !p.id.startsWith('u_'))
+      return (parsed || []).filter((p) => p && p.id && !p.isGuest && !p.is_guest)
     }
   } catch (e) {}
   return []
