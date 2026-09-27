@@ -45,6 +45,9 @@ export default function QuickVettuBoard({
   const [turnSecondsLeft, setTurnSecondsLeft] = useState(35)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
 
+  const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
+  const isMyTurn = curPlayer === myPlayerIndex
+
   // 1v1 Online Match Auto-Return to Dashboard Countdown (7s)
   useEffect(() => {
     if (gameResult && mode === 'matchmaking') {
@@ -155,9 +158,6 @@ export default function QuickVettuBoard({
       if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current)
     }
   }, [])
-
-  const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
-  const isMyTurn = curPlayer === myPlayerIndex
 
   // Detect when opponent reconnects/rejoins
   useEffect(() => {

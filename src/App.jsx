@@ -7,7 +7,7 @@ import MultiplayerModal from './components/MultiplayerModal'
 import JoinRoomModal from './components/JoinRoomModal'
 import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
-import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame } from './utils/userStore'
+import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame, saveActive1v1Match, getActive1v1Match, clearActive1v1Match } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
@@ -46,6 +46,7 @@ export default function App() {
 
   // User state
   const [user, setUser] = useState(loadUser)
+  const [active1v1Match, setActive1v1Match] = useState(() => getActive1v1Match())
 
   // Clean up multiplayer room when leaving game
   const destroyMultiplayer = () => {
@@ -351,9 +352,27 @@ export default function App() {
         setRoomCode(privateRoomCode)
         setIsHost(roleIsHost)
         if (matchGame) setSelectedGame(matchGame)
-        setOpponentProfile(oppProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
+        const opponent = oppProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' }
+        setOpponentProfile(opponent)
         setIsMpModalOpen(false)
         setInGame(true)
+
+        // Save active 1v1 match so player can rejoin upon accidental reload or back button
+        const activeMatch = {
+          roomCode: privateRoomCode,
+          isHost: roleIsHost,
+          game: matchGame || selectedGame,
+          opponentProfile: opponent,
+        }
+        saveActive1v1Match(activeMatch)
+        setActive1v1Match(activeMatch)
+        saveRoomRole(privateRoomCode, roleIsHost ? 'host' : 'guest')
+        saveRoomGame(privateRoomCode, matchGame || selectedGame)
+
+        if (typeof window !== 'undefined') {
+          const newUrl = `${window.location.pathname}?room=${privateRoomCode}&mode=1v1&game=${matchGame || selectedGame}`
+          window.history.replaceState({ room: privateRoomCode, role: roleIsHost ? 'host' : 'guest', mode: '1v1' }, document.title, newUrl)
+        }
 
         // Connect both players into their private 1v1 duel room
         mpRoomRef.current = new MultiplayerRoom({
@@ -397,6 +416,59 @@ export default function App() {
     sounds.playMatchFound()
   }
 
+  // Rejoin an active 1v1 match if user accidentally hit browser back or refreshed
+  const handleRejoin1v1Match = (matchToRejoin) => {
+    const target = matchToRejoin || active1v1Match
+    if (!target || !target.roomCode) return
+
+    sounds.playClick()
+    setGameMode('matchmaking')
+    setRoomCode(target.roomCode)
+    setIsHost(target.isHost)
+    if (target.game) setSelectedGame(target.game)
+    setOpponentProfile(target.opponentProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
+    setIsOpponentDisconnected(false)
+    setIsMpModalOpen(false)
+    setInGame(true)
+
+    if (typeof window !== 'undefined') {
+      const newUrl = `${window.location.pathname}?room=${target.roomCode}&mode=1v1&game=${target.game || selectedGame}`
+      window.history.replaceState({ room: target.roomCode, role: target.isHost ? 'host' : 'guest', mode: '1v1' }, document.title, newUrl)
+    }
+
+    mpRoomRef.current = new MultiplayerRoom({
+      roomCode: target.roomCode,
+      isHost: target.isHost,
+      playerProfile: user,
+      selectedGame: target.game || selectedGame,
+      onMessage: (msg) => {
+        setLastRemoteAction(msg)
+      },
+      onStatusChange: ({ status, remoteProfile }) => {
+        if (status === 'connected') {
+          setIsOpponentDisconnected(false)
+          if (remoteProfile) setOpponentProfile(remoteProfile)
+        } else if (status === 'disconnected') {
+          setIsOpponentDisconnected(true)
+        }
+      },
+    })
+  }
+
+  // Abandon 1v1 match if player wants to discard it and start fresh
+  const handleAbandon1v1Match = () => {
+    sounds.playClick()
+    if (active1v1Match?.roomCode) {
+      markRoomClosed(active1v1Match.roomCode)
+      clearRoomState(active1v1Match.roomCode)
+    }
+    clearActive1v1Match()
+    setActive1v1Match(null)
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }
+
   // Send action to remote player
   const handleSendAction = (action) => {
     if (mpRoomRef.current) {
@@ -406,10 +478,13 @@ export default function App() {
 
   // Game Over outcome tracking
   const handleGameOver = ({ isWin, scoreDiff }) => {
-    // Preserve room for rematch/replay, but clear old move cache
+    // Preserve room for rematch/replay, but clear old move cache and active 1v1 state
     if (roomCode) {
       clearRoomState(roomCode)
     }
+    clearActive1v1Match()
+    setActive1v1Match(null)
+
     const updated = recordMatchResult({
       isWin,
       mode: gameMode,
@@ -436,6 +511,8 @@ export default function App() {
         }
       }
     }
+    clearActive1v1Match()
+    setActive1v1Match(null)
     destroyMultiplayer()
     setRoomCode('')
     setIsMpModalOpen(false)
@@ -581,6 +658,9 @@ export default function App() {
                 onCreateFriendRoom={handleCreateFriendRoom}
                 onJoinFriendRoom={handleJoinFriendRoomFromInput}
                 onStartMatchmaking={handleStartMatchmaking}
+                active1v1Match={active1v1Match}
+                onRejoin1v1Match={handleRejoin1v1Match}
+                onAbandon1v1Match={handleAbandon1v1Match}
                 user={user}
                 onOpenAuth={() => setIsAuthOpen(true)}
               />

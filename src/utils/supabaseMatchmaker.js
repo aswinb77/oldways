@@ -1,23 +1,12 @@
 import { supabase } from './supabaseClient'
 
-function hashString(str) {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i)
-    hash |= 0
-  }
-  return hash
-}
-
-const BUCKET_COUNT = 3
-
 /**
  * Cloud-Backed 1v1 Online Matchmaker powered by Supabase Realtime Presence & Broadcast
  * Optimized for 1,000 - 10,000 CCU:
- * - Sharded pools to reduce O(N^2) presence broadcast traffic
- * - 2-Way MATCH_OFFER -> MATCH_ACCEPT handshake to eliminate host-host race conditions
- * - Randomized jitter on pool evaluation to prevent thundering herd
+ * - 2-Way MATCH_OFFER -> MATCH_ACCEPT handshake eliminates multi-host collisions
+ * - Randomized jitter on pool evaluation prevents thundering-herd spikes
  * - Priority matching based on search wait time (FIFO)
+ * - Immediate presence untracking on match confirmation to keep channel footprint ultra-lean
  */
 export class SupabaseMatchmaker {
   constructor({ user, selectedGame = 'poojyam', onMatchFound, onStatusUpdate }) {
@@ -27,7 +16,6 @@ export class SupabaseMatchmaker {
     this.onStatusUpdate = onStatusUpdate || (() => {})
 
     this.channel = null
-    this.currentBucket = Math.abs(hashString(this.user.id || 'guest')) % BUCKET_COUNT
     this.matched = false
     this.isDestroyed = false
     this.timer = null
@@ -54,15 +42,10 @@ export class SupabaseMatchmaker {
       seconds: 0,
     })
 
-    // Start search elapsed timer & fallback bucket convergence
+    // Start search elapsed timer
     this.timer = setInterval(() => {
       if (this.matched || this.isDestroyed) return
       this.secondsElapsed += 1
-
-      // If waiting > 4s and in a non-zero shard, converge to primary shard b0
-      if (this.secondsElapsed === 4 && this.currentBucket !== 0) {
-        this.migrateToBucket(0)
-      }
 
       const formatted = `${Math.floor(this.secondsElapsed / 60)}:${(this.secondsElapsed % 60).toString().padStart(2, '0')}`
       this.onStatusUpdate({
@@ -72,20 +55,8 @@ export class SupabaseMatchmaker {
       })
     }, 1000)
 
-    this.joinChannel(this.currentBucket)
-  }
-
-  joinChannel(bucketIndex) {
-    if (this.channel && supabase) {
-      try {
-        this.channel.untrack()
-        supabase.removeChannel(this.channel)
-      } catch (e) {}
-      this.channel = null
-    }
-
     try {
-      const channelName = `pv_mm_${this.selectedGame}_b${bucketIndex}`
+      const channelName = `pv_matchmaking_${this.selectedGame}`
       this.channel = supabase.channel(channelName, {
         config: {
           presence: { key: this.user.id },
@@ -98,8 +69,8 @@ export class SupabaseMatchmaker {
         if (this.matched || this.isDestroyed || !payload) return
 
         if (payload.guestId === this.user.id) {
-          // If we already have a pending offer as host or guest, decline
-          if (this.pendingOffer) {
+          // If we already committed to another offer, decline
+          if (this.matched || (this.pendingOffer && this.pendingOffer.offerId !== payload.offerId)) {
             this.channel.send({
               type: 'broadcast',
               event: 'MATCH_DECLINE',
@@ -171,7 +142,7 @@ export class SupabaseMatchmaker {
             clearTimeout(this.pendingOffer.expireTimer)
           }
           this.pendingOffer = null
-          this.schedulePoolEvaluation(100)
+          this.schedulePoolEvaluation(80)
         }
       })
 
@@ -200,15 +171,9 @@ export class SupabaseMatchmaker {
         }
       })
     } catch (err) {
-      console.warn('[Matchmaker] Error initializing shard:', err)
+      console.warn('[Matchmaker] Error initializing:', err)
       this.onStatusUpdate({ state: 'error', message: 'Failed to connect to matchmaking server.' })
     }
-  }
-
-  migrateToBucket(newBucket) {
-    if (this.matched || this.isDestroyed) return
-    this.currentBucket = newBucket
-    this.joinChannel(newBucket)
   }
 
   schedulePoolEvaluation(customJitter) {
@@ -263,7 +228,7 @@ export class SupabaseMatchmaker {
           this.pendingOffer = null
           this.schedulePoolEvaluation(50)
         }
-      }, 1800)
+      }, 2000)
 
       this.pendingOffer = {
         offerId,

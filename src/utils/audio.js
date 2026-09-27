@@ -63,6 +63,30 @@ class SoundController {
     osc.stop(now + 0.09)
   }
 
+  // Subtle UI button click sound
+  playClick() {
+    if (this.muted) return
+    this.init()
+    if (!this.ctx) return
+
+    const now = this.ctx.currentTime
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(440, now)
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.04)
+
+    gain.gain.setValueAtTime(0.15, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05)
+
+    osc.connect(gain)
+    gain.connect(this.ctx.destination)
+
+    osc.start(now)
+    osc.stop(now + 0.05)
+  }
+
   // Crisp, sharp swoosh / slash cut sound when a line is cut
   playCut() {
     if (this.muted) return

@@ -3953,3 +3953,54 @@
   }
 }
 
+/* ── Active 1v1 Match Rejoin & Persistence Styles ── */
+.active-match-actions-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.rejoin-pulse-btn {
+  background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
+  color: #FFF !important;
+}
+
+.rejoin-pulse-btn:hover {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%) !important;
+  transform: translateY(-2px);
+}
+
+.abandon-match-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.2rem 0.6rem;
+  transition: color 0.15s ease;
+}
+
+.abandon-match-btn:hover {
+  color: #DC2626;
+}
+
+.match-in-progress-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #15803D;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

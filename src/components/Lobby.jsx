@@ -10,6 +10,7 @@ import {
   Info,
   X,
   LogIn,
+  RotateCcw,
 } from 'lucide-react'
 
 export default function Lobby({
@@ -19,6 +20,9 @@ export default function Lobby({
   onCreateFriendRoom,
   onJoinFriendRoom,
   onStartMatchmaking,
+  active1v1Match,
+  onRejoin1v1Match,
+  onAbandon1v1Match,
   user,
   onOpenAuth,
 }) {
@@ -151,19 +155,26 @@ export default function Lobby({
               <Swords size={22} />
             </div>
             <span className="clash-vs-text">VS</span>
+            {active1v1Match && (
+              <span className="match-in-progress-pill">Duel Active</span>
+            )}
           </div>
 
-          {/* Opponent Mystery Pod */}
+          {/* Opponent Pod */}
           <div className="fighter-pod">
-            <div className="fighter-avatar-frame mystery-frame">
+            <div className={`fighter-avatar-frame ${active1v1Match ? '' : 'mystery-frame'}`}>
               <img
-                src="/assets/avatar-orange.png"
+                src={active1v1Match?.opponentProfile?.avatar || '/assets/avatar-orange.png'}
                 alt="Opponent"
-                className="fighter-avatar mystery-avatar"
+                className={`fighter-avatar ${active1v1Match ? '' : 'mystery-avatar'}`}
               />
-              <span className="fighter-badge-icon mystery-badge">?</span>
+              <span className={`fighter-badge-icon ${active1v1Match ? '' : 'mystery-badge'}`}>
+                {active1v1Match ? '⚔️' : '?'}
+              </span>
             </div>
-            <span className="fighter-name">Challenger</span>
+            <span className="fighter-name">
+              {active1v1Match?.opponentProfile?.username || 'Challenger'}
+            </span>
           </div>
         </div>
 
@@ -178,6 +189,25 @@ export default function Lobby({
             <LogIn size={20} />
             <span>Login to Play 1v1</span>
           </button>
+        ) : active1v1Match ? (
+          <div className="active-match-actions-box">
+            <button
+              type="button"
+              className="arcade-launch-btn minimal-launch-btn rejoin-pulse-btn"
+              onClick={() => onRejoin1v1Match(active1v1Match)}
+            >
+              <RotateCcw size={20} />
+              <span>Rejoin Active 1v1 Match</span>
+            </button>
+            <button
+              type="button"
+              className="abandon-match-btn"
+              onClick={onAbandon1v1Match}
+              title="Leave this match and search again"
+            >
+              Leave / Abandon Match
+            </button>
+          </div>
         ) : (
           <button
             type="button"

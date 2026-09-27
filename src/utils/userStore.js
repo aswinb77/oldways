@@ -165,6 +165,42 @@ export function isRoomClosed(roomCode) {
   }
 }
 
+// ── 1v1 Matchmaking Active Session Persistence ──
+export function saveActive1v1Match(match) {
+  if (typeof window === 'undefined' || !match || !match.roomCode) return
+  try {
+    const payload = {
+      ...match,
+      savedAt: Date.now(),
+    }
+    localStorage.setItem('pv_active_1v1_match', JSON.stringify(payload))
+  } catch (e) {}
+}
+
+export function getActive1v1Match() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem('pv_active_1v1_match')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Matches older than 15 minutes or closed rooms expire
+    if (!parsed.roomCode || isRoomClosed(parsed.roomCode) || Date.now() - (parsed.savedAt || 0) > 15 * 60 * 1000) {
+      localStorage.removeItem('pv_active_1v1_match')
+      return null
+    }
+    return parsed
+  } catch (e) {
+    return null
+  }
+}
+
+export function clearActive1v1Match() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem('pv_active_1v1_match')
+  } catch (e) {}
+}
+
 export function loadLeaderboard() {
   if (typeof window === 'undefined') return []
   try {
