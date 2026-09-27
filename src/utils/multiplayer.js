@@ -1,9 +1,10 @@
-// Real-time 1v1 Multiplayer Engine with WebRTC PeerJS + BroadcastChannel and Reconnect State Sync
+// Real-time 1v1 Multiplayer Engine with Supabase Realtime Broadcast + WebRTC Fallback + BroadcastChannel
 import { Peer } from 'peerjs'
+import { supabase } from './supabaseClient'
 
 export class MultiplayerRoom {
   constructor({ roomCode, isHost, playerProfile, selectedGame, onMessage, onStatusChange }) {
-    this.roomCode = roomCode.trim().toUpperCase()
+    this.roomCode = (roomCode || '').trim().toUpperCase()
     this.isHost = isHost
     this.playerProfile = playerProfile
     this.selectedGame = selectedGame || 'poojyam'
@@ -13,19 +14,57 @@ export class MultiplayerRoom {
     this.peer = null
     this.conn = null
     this.bc = null
+    this.supabaseChannel = null
     this.connected = false
     this.remoteProfile = null
     this.isDestroyed = false
     this.handshakeInterval = null
+    this.guestRetryTimer = null
+    this.seenMsgIds = new Set()
 
     this.init()
   }
 
   init() {
-    // 1. Setup BroadcastChannel for instant local cross-tab / cross-window
+    this.cleanId = this.roomCode.replace(/[^A-Za-z0-9_-]/g, '')
+
+    // 1. Setup Supabase Realtime Broadcast (Fast, zero-NAT, global cross-device WebSocket relay)
+    if (supabase && this.cleanId) {
+      try {
+        const channelName = `pv_room_${this.cleanId}`
+        this.supabaseChannel = supabase.channel(channelName, {
+          config: {
+            broadcast: { self: false },
+          },
+        })
+
+        this.supabaseChannel.on('broadcast', { event: 'GAME_MESSAGE' }, ({ payload }) => {
+          if (this.isDestroyed || !payload) return
+          this.handleIncomingRaw(payload, 'supabase')
+        })
+
+        this.supabaseChannel.subscribe((status) => {
+          if (this.isDestroyed) return
+          if (status === 'SUBSCRIBED') {
+            this.broadcastPresence()
+            if (!this.connected) {
+              this.onStatusChange({
+                status: 'ready',
+                isHost: this.isHost,
+                message: 'Connected to game room',
+              })
+            }
+          }
+        })
+      } catch (err) {
+        console.warn('Supabase realtime room error:', err)
+      }
+    }
+
+    // 2. Setup BroadcastChannel for instant local cross-tab / cross-window
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        this.bc = new BroadcastChannel(`pv_room_${this.roomCode}`)
+        this.bc = new BroadcastChannel(`pv_room_${this.cleanId}`)
         this.bc.onmessage = (event) => {
           this.handleIncomingRaw(event.data, 'broadcast')
         }
@@ -34,30 +73,19 @@ export class MultiplayerRoom {
       }
     }
 
-    // 2. Setup WebRTC via PeerJS for online real-time 1v1
-    this.cleanId = this.roomCode.replace(/[^A-Za-z0-9_-]/g, '')
+    // 3. Setup WebRTC via PeerJS as secondary peer-to-peer channel
     const peerId = this.isHost
       ? `pv-host-${this.cleanId}`
       : `pv-guest-${this.cleanId}-${Math.random().toString(36).substring(2, 7)}`
 
     try {
       this.peer = new Peer(peerId, {
-        debug: 1,
+        debug: 0,
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun.cloudflare.com:3478' },
-            { urls: 'stun:global.stun.twilio.com:3478' },
-            {
-              urls: [
-                'turn:openrelay.metered.ca:80',
-                'turn:openrelay.metered.ca:443',
-                'turn:openrelay.metered.ca:443?transport=tcp',
-              ],
-              username: 'openrelayproject',
-              credential: 'openrelayproject',
-            },
           ],
         },
       })
@@ -66,14 +94,13 @@ export class MultiplayerRoom {
         if (this.isDestroyed) return
         this.onStatusChange({ status: 'ready', peerId: id, isHost: this.isHost })
 
-        // If guest, connect to the host and start auto-retry loop
+        // If guest, connect to the host
         if (!this.isHost) {
           const hostPeerId = `pv-host-${this.cleanId}`
           this.connectToPeer(hostPeerId)
           this.startGuestConnectLoop()
         }
 
-        // Broadcast presence
         this.broadcastPresence()
       })
 
@@ -83,18 +110,13 @@ export class MultiplayerRoom {
       })
 
       this.peer.on('error', (err) => {
-        console.warn('PeerJS note:', err.type, err.message)
+        // Silently tolerate WebRTC issues since Supabase Realtime handles online multiplayer
         if (err.type === 'unavailable-id' && this.isHost) {
           this.onStatusChange({ status: 'ready_local', message: 'Room active' })
-        } else if (err.type === 'peer-unavailable' && !this.isHost) {
-          this.onStatusChange({
-            status: 'waiting_for_host',
-            message: 'Waiting for your friend to open the game screen...',
-          })
         }
       })
     } catch (err) {
-      console.warn('PeerJS init failed, continuing with BroadcastChannel:', err)
+      console.warn('PeerJS init note:', err)
     }
 
     // Auto-recover if tab wakes up from mobile background/sleep
@@ -129,20 +151,12 @@ export class MultiplayerRoom {
       retries++
       const hostPeerId = `pv-host-${this.cleanId}`
 
-      // Try reconnecting to host
       if (!this.conn || !this.conn.open) {
         this.connectToPeer(hostPeerId)
       }
 
       this.broadcastPresence()
-      this.onStatusChange({
-        status: 'retrying',
-        attempt: retries,
-        message: retries > 2
-          ? 'Waiting for your friend to open the game screen...'
-          : 'Connecting to room...',
-      })
-    }, 2200)
+    }, 2000)
   }
 
   retryConnection() {
@@ -161,7 +175,7 @@ export class MultiplayerRoom {
     this.handshakeInterval = setInterval(() => {
       if (this.isDestroyed) return
       this.broadcastPresence()
-    }, 1500)
+    }, 1800)
   }
 
   broadcastPresence() {
@@ -179,7 +193,7 @@ export class MultiplayerRoom {
       const connection = this.peer.connect(targetId, { reliable: true })
       this.setupConnection(connection)
     } catch (e) {
-      console.warn('connectToPeer exception:', e)
+      // Ignore
     }
   }
 
@@ -200,17 +214,18 @@ export class MultiplayerRoom {
     })
 
     this.conn.on('close', () => {
-      this.connected = false
-      this.onStatusChange({ status: 'disconnected', message: 'Opponent temporarily disconnected' })
-      this.startPresenceLoop()
-      if (!this.isHost) {
-        this.startGuestConnectLoop()
+      // Do not drop connection immediately if Supabase channel is still active
+      if (!this.supabaseChannel) {
+        this.connected = false
+        this.onStatusChange({ status: 'disconnected', message: 'Opponent temporarily disconnected' })
+        this.startPresenceLoop()
+        if (!this.isHost) {
+          this.startGuestConnectLoop()
+        }
       }
     })
 
-    this.conn.on('error', (err) => {
-      console.warn('Connection error:', err)
-    })
+    this.conn.on('error', () => {})
   }
 
   markConnected(remoteGame) {
@@ -231,34 +246,44 @@ export class MultiplayerRoom {
   handleIncomingRaw(data, source) {
     if (!data || typeof data !== 'object') return
 
+    // Deduplicate identical messages arriving via multiple transports
+    if (data.msgId) {
+      if (this.seenMsgIds.has(data.msgId)) return
+      this.seenMsgIds.add(data.msgId)
+      if (this.seenMsgIds.size > 200) {
+        const oldest = this.seenMsgIds.values().next().value
+        this.seenMsgIds.delete(oldest)
+      }
+    }
+
     // Handshake & Presence handling
     if (data.type === 'HOST_ONLINE' && !this.isHost) {
-      this.remoteProfile = data.profile
+      if (data.profile) this.remoteProfile = data.profile
       if (data.selectedGame) this.selectedGame = data.selectedGame
       if (!this.connected) {
         this.markConnected(data.selectedGame)
-        this.sendRaw({
-          type: 'GUEST_ONLINE',
-          profile: this.playerProfile,
-          selectedGame: this.selectedGame,
-        })
       }
+      this.sendRaw({
+        type: 'GUEST_ONLINE',
+        profile: this.playerProfile,
+        selectedGame: this.selectedGame,
+      })
     } else if (data.type === 'GUEST_ONLINE' && this.isHost) {
-      this.remoteProfile = data.profile
+      if (data.profile) this.remoteProfile = data.profile
       if (!this.connected) {
         this.markConnected(this.selectedGame)
-        this.sendRaw({
-          type: 'HOST_WELCOME',
-          profile: this.playerProfile,
-          selectedGame: this.selectedGame,
-        })
       }
+      this.sendRaw({
+        type: 'HOST_WELCOME',
+        profile: this.playerProfile,
+        selectedGame: this.selectedGame,
+      })
     } else if (data.type === 'HOST_WELCOME') {
-      this.remoteProfile = data.profile
+      if (data.profile) this.remoteProfile = data.profile
       if (data.selectedGame) this.selectedGame = data.selectedGame
       this.markConnected(data.selectedGame)
     } else if (data.type === 'HANDSHAKE') {
-      this.remoteProfile = data.profile
+      if (data.profile) this.remoteProfile = data.profile
       if (data.selectedGame && !this.isHost) this.selectedGame = data.selectedGame
       this.markConnected(data.selectedGame)
       this.send({
@@ -267,33 +292,50 @@ export class MultiplayerRoom {
         selectedGame: this.selectedGame,
       })
     } else if (data.type === 'HANDSHAKE_ACK') {
-      this.remoteProfile = data.profile
+      if (data.profile) this.remoteProfile = data.profile
       if (data.selectedGame && !this.isHost) this.selectedGame = data.selectedGame
       this.markConnected(data.selectedGame)
     } else if (data.type === 'HEARTBEAT') {
-      // Keep alive response
       if (!this.connected) this.markConnected()
     } else {
-      // Forward game actions (MOVE, STATE_SYNC, REQUEST_STATE, TAUNT, RESTART)
+      // Forward game actions (MOVE, QUICK_MOVE, STATE_SYNC, QUICK_STATE_SYNC, RESTART, RESET_*, TAUNT, etc.)
       this.onMessage(data)
     }
   }
 
   send(data) {
+    if (!data.msgId) {
+      data.msgId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    }
+    this.seenMsgIds.add(data.msgId)
+
     if (this.conn && this.conn.open) {
       try {
         this.conn.send(data)
-      } catch (e) {
-        console.warn('WebRTC send failed:', e)
-      }
+      } catch (e) {}
     }
     this.sendRaw(data)
   }
 
   sendRaw(data) {
+    if (!data.msgId) {
+      data.msgId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+    }
+    this.seenMsgIds.add(data.msgId)
+
     if (this.bc) {
       try {
         this.bc.postMessage(data)
+      } catch (e) {}
+    }
+
+    if (this.supabaseChannel && !this.isDestroyed) {
+      try {
+        this.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'GAME_MESSAGE',
+          payload: data,
+        })
       } catch (e) {}
     }
   }
@@ -312,20 +354,29 @@ export class MultiplayerRoom {
       clearInterval(this.handshakeInterval)
       this.handshakeInterval = null
     }
+    if (this.supabaseChannel && supabase) {
+      try {
+        supabase.removeChannel(this.supabaseChannel)
+      } catch (e) {}
+      this.supabaseChannel = null
+    }
     if (this.conn) {
       try {
         this.conn.close()
       } catch (e) {}
+      this.conn = null
     }
     if (this.peer) {
       try {
         this.peer.destroy()
       } catch (e) {}
+      this.peer = null
     }
     if (this.bc) {
       try {
         this.bc.close()
       } catch (e) {}
+      this.bc = null
     }
   }
 }

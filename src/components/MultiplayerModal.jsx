@@ -156,9 +156,7 @@ export default function MultiplayerModal({
                 <span className="m-lbl">Game Mode</span>
               </div>
               <div className="m-stat">
-                <span className="m-val live-ping-val">
-                  <span className="live-dot" /> Live
-                </span>
+                <span className="m-val live-ping-val">Live</span>
                 <span className="m-lbl">Cloud Pool</span>
               </div>
             </div>
@@ -180,7 +178,7 @@ export default function MultiplayerModal({
                   onClick={onStartSimulatedMatch}
                 >
                   <Bot size={18} />
-                  <span>Duel AI Challenger (Sneha_Thrissur)</span>
+                  <span>Play with Bot</span>
                 </button>
               </div>
             )}

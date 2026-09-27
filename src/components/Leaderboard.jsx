@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Trophy, Flame, Medal, Clock, ShieldCheck, Sparkles, LogIn, RefreshCw, Radio, Info, X } from 'lucide-react'
+import { Trophy, Flame, Medal, Clock, Sparkles, LogIn, Info, X } from 'lucide-react'
 import { loadLeaderboard, saveLeaderboard, getWeeklyResetTime } from '../utils/userStore'
 import { fetchGlobalLeaderboard, subscribeToLeaderboard } from '../utils/supabaseClient'
 
@@ -55,15 +55,6 @@ export default function Leaderboard({ user, onOpenAuth }) {
               <Clock size={14} />
               <span>Resets: <strong>{timeLeft}</strong></span>
             </div>
-            <button
-              type="button"
-              className="cloud-sync-pill"
-              onClick={refreshFromCloud}
-              title="Click to refresh cloud rankings"
-            >
-              <RefreshCw size={12} className={isSyncing ? 'spin-anim' : ''} />
-              <span>Live Cloud</span>
-            </button>
             <button
               type="button"
               className="info-circle-btn"

@@ -1,18 +1,14 @@
 import React, { useState } from 'react'
 import {
   Users,
-  Zap,
   Share2,
   ArrowRight,
   Play,
   Bot,
   Swords,
   Shield,
-  Flame,
-  Trophy,
   Info,
   X,
-  Sparkles,
 } from 'lucide-react'
 
 export default function Lobby({
@@ -118,7 +114,6 @@ export default function Lobby({
       <div className="arcade-battle-hero minimal-battle-hero">
         <div className="hero-top-strip">
           <div className="hero-stakes-badge single-stakes-pill">
-            <span className="live-dot" />
             <span>{user.isGuest ? 'Casual 1v1' : 'Ranked 1v1'}</span>
             <button
               type="button"
@@ -298,39 +293,6 @@ export default function Lobby({
         </div>
       </div>
 
-      {/* ── 4. Minimal Player HUD Bar ── */}
-      {user.isGuest ? (
-        <div className="arcade-guest-banner minimal-guest-strip">
-          <div className="guest-banner-left">
-            <Sparkles size={18} color="#D97706" />
-            <span className="guest-mini-text">Guest Mode · Log in to earn weekly points</span>
-          </div>
-          <button
-            type="button"
-            className="creamy-btn btn-primary guest-cta-btn"
-            onClick={onOpenAuth}
-          >
-            Login
-          </button>
-        </div>
-      ) : (
-        <div className="arcade-gamer-hud minimal-gamer-hud">
-          <div className="hud-left">
-            <img src={user.avatar} alt={user.username} className="hud-avatar" />
-            <span className="hud-name">{user.username}</span>
-          </div>
-          <div className="hud-stats-pills">
-            <div className="hud-stat-chip">
-              <Trophy size={13} color="#D97706" />
-              <span>{user.points || 0} pts</span>
-            </div>
-            <div className="hud-stat-chip">
-              <Flame size={13} color="#DC2626" />
-              <span>{user.streak || 0} 🔥</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
