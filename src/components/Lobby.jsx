@@ -197,15 +197,15 @@ export default function Lobby({
               onClick={() => onRejoin1v1Match(active1v1Match)}
             >
               <RotateCcw size={20} />
-              <span>Rejoin Active 1v1 Match</span>
+              <span>Already in Game · Rejoin</span>
             </button>
             <button
               type="button"
               className="abandon-match-btn"
               onClick={onAbandon1v1Match}
-              title="Leave this match and search again"
+              title="Leave this match and forfeit"
             >
-              Leave / Abandon Match
+              Forfeit / Leave Match
             </button>
           </div>
         ) : (

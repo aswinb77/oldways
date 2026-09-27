@@ -11,7 +11,7 @@ import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClo
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
-import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X, Users } from 'lucide-react'
+import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X, Users, AlertTriangle } from 'lucide-react'
 import './App.css'
 
 export default function App() {
@@ -34,8 +34,12 @@ export default function App() {
   const [queueStatus, setQueueStatus] = useState(null)
   const [roomExpiredNotice, setRoomExpiredNotice] = useState(null)
   const [roomFullNotice, setRoomFullNotice] = useState(null)
+  const [showForfeitModal, setShowForfeitModal] = useState(false)
   const mpRoomRef = useRef(null)
   const fcfsMatchmakerRef = useRef(null)
+  const inGameRef = useRef(inGame)
+  const gameModeRef = useRef(gameMode)
+  const isGameOverRef = useRef(false)
 
   // Modals
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -62,12 +66,36 @@ export default function App() {
     setQueueStatus(null)
   }
 
+  // Keep refs in sync for back button / popstate interception
+  useEffect(() => {
+    inGameRef.current = inGame
+    gameModeRef.current = gameMode
+  }, [inGame, gameMode])
+
+  // Intercept browser and mobile hardware back button
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handlePopState = () => {
+      if (inGameRef.current) {
+        window.history.pushState({ inGame: true }, document.title, window.location.href)
+        if (gameModeRef.current !== 'bot' && !isGameOverRef.current) {
+          setShowForfeitModal(true)
+        } else {
+          handleExitToLobby()
+        }
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
   // Check URL query parameters for invite links on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const roomParam = params.get('room')
     const gameParam = params.get('game')
+    const modeParam = params.get('mode')
 
     if (gameParam && (gameParam === 'poojyam' || gameParam === 'quick')) {
       setSelectedGame(gameParam)
@@ -75,11 +103,16 @@ export default function App() {
 
     if (roomParam) {
       const targetCode = roomParam.trim().toUpperCase()
+      const activeMatch = getActive1v1Match()
+      const is1v1Match = modeParam === '1v1' || targetCode.startsWith('MATCH-') || (activeMatch && activeMatch.roomCode === targetCode)
+
       // If room was closed or marked finished, display notice and remove param from URL
       if (isRoomClosed(targetCode)) {
+        clearActive1v1Match()
+        setActive1v1Match(null)
         setRoomExpiredNotice({
           code: targetCode,
-          message: `Room ${targetCode} has ended or both players have left. This link is no longer valid.`,
+          message: `Match ${targetCode} has ended. Returning to lobby.`,
         })
         if (typeof window !== 'undefined') {
           window.history.replaceState({}, document.title, window.location.pathname)
@@ -87,13 +120,59 @@ export default function App() {
         return
       }
 
-      const savedGame = getRoomGame(targetCode) || gameParam
+      const savedGame = getRoomGame(targetCode) || activeMatch?.game || gameParam
       if (savedGame && (savedGame === 'poojyam' || savedGame === 'quick')) {
         setSelectedGame(savedGame)
       }
 
+      if (is1v1Match) {
+        // Direct resume for 1v1 matchmaking - NO friend popup modal!
+        const savedRole = getRoomRole(targetCode) || (activeMatch?.isHost ? 'host' : 'guest')
+        const roleIsHost = savedRole === 'host'
+        const opponent = activeMatch?.opponentProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' }
+
+        destroyMultiplayer()
+        setRoomCode(targetCode)
+        setIsHost(roleIsHost)
+        setGameMode('matchmaking')
+        setOpponentProfile(opponent)
+        setIsMpModalOpen(false)
+        setIsConnectingGuest(false)
+        setIsOpponentDisconnected(false)
+        setIsOpponentExited(false)
+        setInGame(true)
+        isGameOverRef.current = false
+
+        const activePayload = {
+          roomCode: targetCode,
+          isHost: roleIsHost,
+          game: savedGame || selectedGame,
+          opponentProfile: opponent,
+        }
+        saveActive1v1Match(activePayload)
+        setActive1v1Match(activePayload)
+
+        mpRoomRef.current = new MultiplayerRoom({
+          roomCode: targetCode,
+          isHost: roleIsHost,
+          playerProfile: user,
+          selectedGame: savedGame || selectedGame,
+          onMessage: (msg) => {
+            setLastRemoteAction(msg)
+          },
+          onStatusChange: ({ status, remoteProfile }) => {
+            if (status === 'connected') {
+              setIsOpponentDisconnected(false)
+              if (remoteProfile) setOpponentProfile(remoteProfile)
+            } else if (status === 'disconnected') {
+              setIsOpponentDisconnected(true)
+            }
+          },
+        })
+        return
+      }
+
       const savedRole = getRoomRole(targetCode)
-      
       // If user was host of this room, resume as host
       if (savedRole === 'host') {
         resumeHostRoom(targetCode)
@@ -444,6 +523,7 @@ export default function App() {
     setOpponentProfile(target.opponentProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
     setIsOpponentDisconnected(false)
     setIsMpModalOpen(false)
+    isGameOverRef.current = false
     setInGame(true)
 
     if (typeof window !== 'undefined') {
@@ -470,13 +550,28 @@ export default function App() {
     })
   }
 
-  // Abandon 1v1 match if player wants to discard it and start fresh
+  // Abandon 1v1 match from Lobby: forfeits match and clears active state
   const handleAbandon1v1Match = () => {
     sounds.playClick()
     if (active1v1Match?.roomCode) {
+      if (mpRoomRef.current) {
+        mpRoomRef.current.send({
+          type: 'FORFEIT',
+          roomCode: active1v1Match.roomCode,
+          sender: user?.username || 'Opponent',
+          loserId: user?.id,
+        })
+      }
       markRoomClosed(active1v1Match.roomCode)
       clearRoomState(active1v1Match.roomCode)
     }
+    const updated = recordMatchResult({
+      isWin: false,
+      mode: 'matchmaking',
+      scoreDiff: -10,
+      currentUser: user,
+    })
+    setUser(updated)
     clearActive1v1Match()
     setActive1v1Match(null)
     if (typeof window !== 'undefined' && window.location.search) {
@@ -493,7 +588,7 @@ export default function App() {
 
   // Game Over outcome tracking
   const handleGameOver = ({ isWin, scoreDiff }) => {
-    // Preserve room for rematch/replay, but clear old move cache and active 1v1 state
+    isGameOverRef.current = true
     if (roomCode) {
       clearRoomState(roomCode)
     }
@@ -507,6 +602,40 @@ export default function App() {
       currentUser: user,
     })
     setUser(updated)
+  }
+
+  // Intercept in-game back click: prompt for forfeit confirmation if match is still in progress
+  const handleBackArrowClick = () => {
+    sounds.playClick()
+    if (inGame && gameMode !== 'bot' && !isGameOverRef.current) {
+      setShowForfeitModal(true)
+    } else {
+      handleExitToLobby()
+    }
+  }
+
+  // User confirmed forfeit: awards win to opponent and records loss for user
+  const handleConfirmForfeit = () => {
+    setShowForfeitModal(false)
+    if (mpRoomRef.current) {
+      mpRoomRef.current.send({
+        type: 'FORFEIT',
+        roomCode,
+        sender: user?.username || 'Opponent',
+        loserId: user?.id,
+      })
+    }
+    handleGameOver({ isWin: false, scoreDiff: -10 })
+    clearActive1v1Match()
+    setActive1v1Match(null)
+    destroyMultiplayer()
+    setRoomCode('')
+    setIsOpponentDisconnected(false)
+    setIsOpponentExited(false)
+    setInGame(false)
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
   }
 
   // Return to Lobby: CLOSE the room ONLY if Host leaves; if Guest leaves, keep room open for reconnect
@@ -550,7 +679,7 @@ export default function App() {
             <button
               type="button"
               className="creamy-btn in-game-back-arrow"
-              onClick={handleExitToLobby}
+              onClick={handleBackArrowClick}
               aria-label="Back to Lobby"
               title="Back to Lobby"
             >
@@ -780,6 +909,38 @@ export default function App() {
                 }}
               >
                 Back to Lobby
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forfeit Confirmation Modal */}
+      {showForfeitModal && (
+        <div className="creamy-modal-overlay">
+          <div className="creamy-modal-content room-expired-modal-box forfeit-modal-box">
+            <div className="room-expired-badge" style={{ background: '#FEE2E2', borderColor: '#FECACA' }}>
+              <AlertTriangle size={34} color="#DC2626" />
+            </div>
+            <h2 className="room-expired-title">Forfeit Match? ⚠️</h2>
+            <p className="room-expired-sub">
+              Are you sure you want to leave? Backing out means you <strong>forfeit</strong> this match.
+              Your opponent will win and be awarded the victory points.
+            </p>
+            <div className="forfeit-actions-row">
+              <button
+                type="button"
+                className="creamy-btn btn-primary stay-btn"
+                onClick={() => setShowForfeitModal(false)}
+              >
+                Stay in Game
+              </button>
+              <button
+                type="button"
+                className="creamy-btn cancel-conn-btn forfeit-confirm-btn"
+                onClick={handleConfirmForfeit}
+              >
+                Forfeit & Exit
               </button>
             </div>
           </div>

@@ -30,7 +30,7 @@ export default function PoojyamVettuBoard({
   const [showConnInfo, setShowConnInfo] = useState(false)
   // Check if a saved paused game exists for this room
   const savedInitialState = useMemo(() => {
-    if (mode === 'friend' && roomCode) {
+    if ((mode === 'friend' || mode === 'matchmaking') && roomCode) {
       const saved = loadRoomState(roomCode)
       if (saved && saved.grid) {
         return saved
@@ -196,7 +196,7 @@ export default function PoojyamVettuBoard({
 
   // Save room state locally on any move/cut so refreshes/cutoffs resume perfectly
   useEffect(() => {
-    if (mode === 'friend' && roomCode && !gameResult) {
+    if ((mode === 'friend' || mode === 'matchmaking') && roomCode && !gameResult) {
       saveRoomState(roomCode, {
         grid,
         scores,
@@ -362,8 +362,20 @@ export default function PoojyamVettuBoard({
     } else if (lastRemoteAction.type === 'TAUNT') {
       const sender = lastRemoteAction.senderName || opponentProfile?.username || 'Opponent'
       triggerTauntDisplay({ text: lastRemoteAction.text, sender, isSelf: false })
+    } else if (lastRemoteAction.type === 'FORFEIT') {
+      const result = {
+        winner: myPlayerIndex,
+        title: '🏆 Opponent Forfeited!',
+        type: 'win',
+        subtitle: `${lastRemoteAction.sender || 'Opponent'} left the match. You win by forfeit!`,
+      }
+      setGameResult(result)
+      if (roomCode) clearRoomState(roomCode)
+      sounds.playWin()
+      confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
+      onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
     }
-  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile])
+  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile, myPlayerIndex, roomCode, onGameOver])
 
   // Handle Bot Turn
   useEffect(() => {

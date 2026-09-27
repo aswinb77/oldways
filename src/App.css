@@ -3329,6 +3329,29 @@
   justify-content: center;
 }
 
+.forfeit-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.forfeit-actions-row button {
+  width: 100%;
+  justify-content: center;
+}
+
+.forfeit-confirm-btn {
+  color: #DC2626 !important;
+  border-color: #FECACA !important;
+  background: #FEF2F2 !important;
+  font-weight: 700 !important;
+}
+
+.forfeit-confirm-btn:hover {
+  background: #FEE2E2 !important;
+}
+
 /* Join Room Modal (Friend Invitation) */
 .join-room-modal-box {
   text-align: center;
