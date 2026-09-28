@@ -203,7 +203,6 @@ export default function Leaderboard({ user, onOpenAuth }) {
                   <img src={player.avatar} alt={player.username} className="cell-avatar" />
                   <div className="cell-player-info">
                     <span className="player-handle">{player.username}</span>
-                    {isMe && <span className="you-pill">YOU</span>}
                   </div>
                 </div>
 
