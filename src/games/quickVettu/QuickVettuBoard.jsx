@@ -46,6 +46,7 @@ export default function QuickVettuBoard({
   const [turnSecondsLeft, setTurnSecondsLeft] = useState(35)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
   const isGameOverHandledRef = useRef(false)
+  const processedActionIdRef = useRef(new Set())
 
   // Clean up any active confetti on unmount / navigation to Lobby
   useEffect(() => {
@@ -293,6 +294,17 @@ export default function QuickVettuBoard({
   // Handle incoming remote action
   useEffect(() => {
     if (!lastRemoteAction) return
+
+    // Prevent duplicate processing of the exact same message
+    if (lastRemoteAction.msgId) {
+      if (processedActionIdRef.current.has(lastRemoteAction.msgId)) return
+      processedActionIdRef.current.add(lastRemoteAction.msgId)
+      if (processedActionIdRef.current.size > 200) {
+        const oldest = processedActionIdRef.current.values().next().value
+        processedActionIdRef.current.delete(oldest)
+      }
+    }
+
     if (lastRemoteAction.type === 'QUICK_MOVE') {
       const { idx, player } = lastRemoteAction
       if (board[idx] === null) {
@@ -334,6 +346,17 @@ export default function QuickVettuBoard({
       const sender = lastRemoteAction.senderName || opponentProfile?.username || 'Opponent'
       triggerTauntDisplay({ text: lastRemoteAction.text, sender, isSelf: false })
     } else if (lastRemoteAction.type === 'FORFEIT') {
+      // 1. Strictly verify forfeit matches the CURRENT active room
+      if (lastRemoteAction.roomCode && roomCode && lastRemoteAction.roomCode !== roomCode) {
+        return
+      }
+      // 2. Ignore if I am the one who forfeited
+      if (lastRemoteAction.loserId && currentUser?.id && lastRemoteAction.loserId === currentUser.id) {
+        return
+      }
+      if (lastRemoteAction.senderId && currentUser?.id && lastRemoteAction.senderId === currentUser.id) {
+        return
+      }
       const result = {
         winner: myPlayerIndex,
         title: '🏆 Opponent Forfeited!',
@@ -342,7 +365,7 @@ export default function QuickVettuBoard({
       }
       triggerGameOver({ isWin: true, scoreDiff: 1, result })
     }
-  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile, myPlayerIndex, roomCode, onGameOver])
+  }, [lastRemoteAction, triggerTauntDisplay, opponentProfile, myPlayerIndex, roomCode, onGameOver, currentUser?.id])
 
   // Bot Turn
   useEffect(() => {

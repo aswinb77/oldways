@@ -88,6 +88,7 @@ export default function App() {
       mpRoomRef.current = null
     }
     setQueueStatus(null)
+    setLastRemoteAction(null)
   }
 
   // Keep refs in sync for back button / popstate interception
@@ -446,6 +447,7 @@ export default function App() {
   // Friend confirms their Name & Avatar
   const handleFriendJoinConfirmed = (friendUser) => {
     isGameOverRef.current = false
+    setLastRemoteAction(null)
     try { confetti.reset() } catch (e) {}
     setUser(friendUser)
     setIsJoinRoomModalOpen(false)
@@ -576,6 +578,7 @@ export default function App() {
     if (!target || !target.roomCode) return
 
     sounds.playClick()
+    setLastRemoteAction(null)
     setGameMode('matchmaking')
     setRoomCode(target.roomCode)
     setIsHost(target.isHost)

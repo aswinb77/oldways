@@ -286,6 +286,9 @@ export class MultiplayerRoom {
   handleIncomingRaw(data, source) {
     if (!data || typeof data !== 'object') return
 
+    // Drop loopback messages sent by self
+    if (data.senderId && data.senderId === this.myId) return
+
     // Deduplicate identical messages arriving via multiple transports
     if (data.msgId) {
       if (this.seenMsgIds.has(data.msgId)) return
