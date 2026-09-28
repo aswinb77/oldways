@@ -118,8 +118,18 @@ export async function recordCloudMatchWin({ userId, roomCode, scoreDiff = 0 }) {
  * Sync player profile and points to Supabase in the background
  * Debounced to coalesce rapid updates
  */
+export function cancelPendingProfileSync() {
+  if (pendingSyncTimer) {
+    clearTimeout(pendingSyncTimer)
+    pendingSyncTimer = null
+  }
+  latestUserToSync = null
+}
+
 export async function syncProfileToCloud(user) {
-  if (!supabase || !user || !user.id || user.isGuest) return false
+  if (!supabase || !user || !user.id || user.isGuest || user.is_guest || String(user.id).startsWith('guest_')) {
+    return false
+  }
 
   latestUserToSync = user
 
@@ -130,7 +140,9 @@ export async function syncProfileToCloud(user) {
   pendingSyncTimer = setTimeout(async () => {
     pendingSyncTimer = null
     const target = latestUserToSync
-    if (!target || !target.id) return
+    if (!target || !target.id || target.isGuest || target.is_guest || String(target.id).startsWith('guest_')) {
+      return
+    }
 
     try {
       const payload = {

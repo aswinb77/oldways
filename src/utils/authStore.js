@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient'
+import { supabase, cancelPendingProfileSync } from './supabaseClient'
 import { saveUser, getGuestUser } from './userStore'
 
 /**
@@ -79,6 +79,7 @@ export async function registerAccount({ username, password, avatar }) {
     streak: 0,
     badge: 'Bronze',
     is_guest: false,
+    isGuest: false,
     updated_at: new Date().toISOString(),
   }
 
@@ -164,6 +165,7 @@ export async function loginAccount({ username, password }) {
     streak: Number(profile.streak) || 0,
     badge: profile.badge || 'Bronze',
     is_guest: false,
+    isGuest: false,
   }
 
   saveUser(userObj)
@@ -174,6 +176,7 @@ export async function loginAccount({ username, password }) {
  * Log out user and revert to a clean guest profile
  */
 export function logoutAccount() {
+  cancelPendingProfileSync()
   const guest = getGuestUser()
   saveUser(guest)
   return guest

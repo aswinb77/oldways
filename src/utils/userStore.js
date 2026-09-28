@@ -51,22 +51,6 @@ export function loadUser() {
         parsed.avatar = getAsset(parsed.avatar)
       }
 
-      // One-time automatic reset to purge previously inflated stats (wins, points, streak, losses)
-      const STATS_RESET_KEY = 'pv_stats_reset_clean_v1'
-      if (!localStorage.getItem(STATS_RESET_KEY)) {
-        parsed.points = 0
-        parsed.wins = 0
-        parsed.losses = 0
-        parsed.streak = 0
-        parsed.badge = 'Novice'
-        localStorage.setItem('pv_user_profile', JSON.stringify(parsed))
-        localStorage.removeItem('pv_leaderboard')
-        localStorage.setItem(STATS_RESET_KEY, 'true')
-        if (!parsed.isGuest) {
-          syncProfileToCloud(parsed)
-        }
-      }
-
       return parsed
     }
   } catch (e) {}
@@ -82,9 +66,6 @@ export function resetAllUserStats() {
   current.badge = 'Novice'
   saveUser(current)
   localStorage.removeItem('pv_leaderboard')
-  if (!current.isGuest) {
-    syncProfileToCloud(current)
-  }
   return current
 }
 
