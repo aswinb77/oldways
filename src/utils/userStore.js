@@ -1,16 +1,17 @@
 // User Authentication, Profile, and Weekly Leaderboard Store
 import { syncProfileToCloud } from './supabaseClient'
+import { ASSETS, getAsset } from './assets'
 
 const DEFAULT_AVATARS = [
-  { id: 'shield_blue', name: 'Blue Shield', src: '/assets/avatar-blue.png' },
-  { id: 'shield_green', name: 'Green Shield', src: '/assets/avatar-green.png' },
-  { id: 'shield_purple', name: 'Purple Shield', src: '/assets/avatar-purple.png' },
-  { id: 'shield_orange', name: 'Orange Shield', src: '/assets/avatar-orange.png' },
-  { id: 'shield_red', name: 'Red Shield', src: '/assets/avatar-red.png' },
-  { id: 'shield_cyan', name: 'Cyan Shield', src: '/assets/avatar-cyan.png' },
+  { id: 'shield_blue', name: 'Blue Shield', src: ASSETS.avatarBlue },
+  { id: 'shield_green', name: 'Green Shield', src: ASSETS.avatarGreen },
+  { id: 'shield_purple', name: 'Purple Shield', src: ASSETS.avatarPurple },
+  { id: 'shield_orange', name: 'Orange Shield', src: ASSETS.avatarOrange },
+  { id: 'shield_red', name: 'Red Shield', src: ASSETS.avatarRed },
+  { id: 'shield_cyan', name: 'Cyan Shield', src: ASSETS.avatarCyan },
 ]
 
-export { DEFAULT_AVATARS }
+export { DEFAULT_AVATARS, getAsset }
 
 // Initial Weekly Leaderboard Seed Data (Real players only)
 const INITIAL_LEADERBOARD = []
@@ -21,9 +22,11 @@ export function loadUser() {
     const raw = localStorage.getItem('pv_user_profile')
     if (raw) {
       const parsed = JSON.parse(raw)
-      // Upgrade any old avatar to one of the new shield icons
+      // Upgrade any old avatar to one of the new shield icons and resolve via Vite bundle
       if (!parsed.avatar || !parsed.avatar.includes('avatar-')) {
-        parsed.avatar = '/assets/avatar-blue.png'
+        parsed.avatar = ASSETS.avatarBlue
+      } else {
+        parsed.avatar = getAsset(parsed.avatar)
       }
       // Sanitize legacy 120 points from old login bug: points only come from real online wins
       if ((!parsed.wins || parsed.wins === 0) && parsed.points > 0) {
@@ -43,7 +46,7 @@ export function getGuestUser() {
     id: `guest_${randomSuffix}`,
     username: `Guest_${randomSuffix}`,
     isGuest: true,
-    avatar: '/assets/avatar-blue.png',
+    avatar: ASSETS.avatarBlue,
     wins: 0,
     losses: 0,
     points: 0,

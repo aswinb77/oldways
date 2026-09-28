@@ -5,6 +5,7 @@ import { RotateCcw, Sparkles, MessageSquare, WifiOff, Play, RefreshCw, CheckCirc
 import { checkQuickWinner, getQuickAiMove, QUICK_LINES } from './quickVettuLogic'
 import { sounds } from '../../utils/audio'
 import { saveRoomState, loadRoomState, clearRoomState, clearActive1v1Match, markRoomClosed } from '../../utils/userStore'
+import { ASSETS, getAsset } from '../../utils/assets'
 
 export default function QuickVettuBoard({
   mode = 'bot',
@@ -462,8 +463,8 @@ export default function QuickVettuBoard({
       <div className="creamy-card board-scoreboard-card">
         <div className={`scoreboard-player p1-box ${curPlayer === 0 && !gameResult ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-avatar-badge">
-            <img src={currentUser.avatar} alt="P1" className="player-img" />
-            <img src="/assets/vettu-x-red.png" alt="X" className="piece-indicator-icon" />
+            <img src={getAsset(currentUser.avatar || ASSETS.avatarRed)} alt="P1" className="player-img" />
+            <img src={ASSETS.vettuXRed} alt="X" className="piece-indicator-icon" />
             {curPlayer === 0 && !gameResult && <span className="avatar-pulse-ring ring-red" />}
           </div>
           <div className="player-details">
@@ -496,8 +497,8 @@ export default function QuickVettuBoard({
             <span className="piece-name">Blue X</span>
           </div>
           <div className="player-avatar-badge">
-            <img src={mode === 'bot' ? '/assets/avatar-orange.png' : (opponentProfile?.avatar || '/assets/avatar-blue.png')} alt="P2" className="player-img" />
-            <img src="/assets/vettu-x-blue.png" alt="O" className="piece-indicator-icon" />
+            <img src={mode === 'bot' ? ASSETS.avatarOrange : getAsset(opponentProfile?.avatar || ASSETS.avatarBlue)} alt="P2" className="player-img" />
+            <img src={ASSETS.vettuXBlue} alt="O" className="piece-indicator-icon" />
             {curPlayer === 1 && !gameResult && <span className="avatar-pulse-ring ring-blue" />}
           </div>
         </div>
@@ -538,10 +539,10 @@ export default function QuickVettuBoard({
                 disabled={cell !== null || gameResult || !isMyTurn}
               >
                 {cell === null ? (
-                  <img src="/assets/vettu-slot-empty.png" alt="slot" className="quick-slot-empty" />
+                  <img src={ASSETS.vettuSlotEmpty} alt="slot" className="quick-slot-empty" />
                 ) : (
                   <img
-                    src={cell === 0 ? '/assets/vettu-x-red.png' : '/assets/vettu-x-blue.png'}
+                    src={cell === 0 ? ASSETS.vettuXRed : ASSETS.vettuXBlue}
                     alt={cell === 0 ? 'X Red' : 'X Blue'}
                     className="quick-placed-mark"
                   />
@@ -654,12 +655,12 @@ export default function QuickVettuBoard({
 
               <div className="result-scores-box">
                 <div className="score-team">
-                  <img src="/assets/vettu-x-red.png" alt="Red" />
+                  <img src={ASSETS.vettuXRed} alt="Red" />
                   <span className="team-name">{p1Name}</span>
                 </div>
                 <div className="score-vs">:</div>
                 <div className="score-team">
-                  <img src="/assets/vettu-x-blue.png" alt="Blue" />
+                  <img src={ASSETS.vettuXBlue} alt="Blue" />
                   <span className="team-name">{p2Name}</span>
                 </div>
               </div>

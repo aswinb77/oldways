@@ -5,8 +5,11 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: {
+    // Inlines small assets (< 25KB, including piece PNGs & SVGs) as data URIs directly into bundle
+    assetsInlineLimit: 25600,
     rollupOptions: {
       output: {
+        assetFileNames: 'assets/[name]-[hash][extname]',
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('@supabase')) return 'vendor-supabase'

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Trophy, Volume2, VolumeX, LogIn, Sparkles, Gamepad2 } from 'lucide-react'
 import { sounds } from '../utils/audio'
+import { ASSETS, getAsset } from '../utils/assets'
 
 export default function Navbar({
   currentView,
@@ -28,8 +29,8 @@ export default function Navbar({
             tabIndex={0}
           >
             <div className="brand-badge">
-              <img src="/assets/vettu-x-red.png" alt="X" className="brand-x" />
-              <img src="/assets/vettu-slot-filled.png" alt="O" className="brand-o" />
+              <img src={ASSETS.vettuXRed} alt="X" className="brand-x" />
+              <img src={ASSETS.vettuSlotFilled} alt="O" className="brand-o" />
             </div>
             <div className="brand-text-wrap">
               <span className="brand-title">Poojyam Vettu</span>
@@ -81,7 +82,7 @@ export default function Navbar({
               </button>
             ) : (
               <div className="user-profile-pill" onClick={onOpenAuth} role="button">
-                <img src={user.avatar} alt={user.username} className="profile-avatar" />
+                <img src={getAsset(user.avatar)} alt={user.username} className="profile-avatar" />
                 <div className="profile-info">
                   <span className="profile-name">{user.username}</span>
                   <span className="profile-points">

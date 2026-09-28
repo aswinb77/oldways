@@ -4039,3 +4039,61 @@
   gap: 4px;
 }
 
+/* ==========================================================================
+   Mobile Touch & No-Hover Tap Refinements
+   Prevents blue tap highlight overlay, sticky hover states, and touch outlines
+   ========================================================================== */
+@media (hover: none) and (pointer: coarse) {
+  *, *::before, *::after {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* Disable sticky hover translation on touch devices */
+  .sound-toggle-btn:hover,
+  .canvas-restart-icon-btn:hover,
+  .in-game-back-arrow:hover,
+  .mobile-nav-pill:hover,
+  .nav-tab:hover,
+  .info-circle-btn:hover,
+  .conn-info-icon-btn:hover,
+  .user-profile-pill:hover,
+  .user-login-cta:hover,
+  .game-square-card:hover,
+  .arcade-launch-btn:hover,
+  .diff-chip-btn:hover,
+  .taunt-btn:hover,
+  .rejoin-pulse-btn:hover,
+  .cloud-sync-pill:hover {
+    transform: none !important;
+  }
+
+  /* Reset hover background highlights that stick on mobile icons */
+  .sound-toggle-btn:hover {
+    color: var(--text-muted);
+    background: var(--bg-card);
+  }
+
+  .canvas-restart-icon-btn:hover:not(:disabled) {
+    background: #FFFFFF;
+    border-color: var(--border-creamy);
+    box-shadow: 0 3px 0 var(--border-creamy-dark);
+  }
+
+  .in-game-back-arrow:hover {
+    background: var(--bg-card);
+    border-color: var(--border-creamy);
+    box-shadow: 0 3px 0 var(--border-creamy-dark);
+  }
+
+  /* Tactile immediate response on actual press without sticky state */
+  .sound-toggle-btn:active,
+  .canvas-restart-icon-btn:active,
+  .in-game-back-arrow:active,
+  .mobile-nav-pill:active,
+  .taunt-btn:active {
+    opacity: 0.8;
+    transform: scale(0.96) !important;
+  }
+}
+
+

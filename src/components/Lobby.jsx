@@ -12,6 +12,7 @@ import {
   LogIn,
   RotateCcw,
 } from 'lucide-react'
+import { ASSETS, getAsset } from '../utils/assets'
 
 export default function Lobby({
   selectedGame,
@@ -138,7 +139,7 @@ export default function Lobby({
           <div className="fighter-pod">
             <div className="fighter-avatar-frame">
               <img
-                src={user.avatar || '/assets/avatar-red.png'}
+                src={getAsset(user.avatar || ASSETS.avatarRed)}
                 alt={user.username}
                 className="fighter-avatar"
               />
@@ -164,7 +165,7 @@ export default function Lobby({
           <div className="fighter-pod">
             <div className={`fighter-avatar-frame ${active1v1Match ? '' : 'mystery-frame'}`}>
               <img
-                src={active1v1Match?.opponentProfile?.avatar || '/assets/avatar-orange.png'}
+                src={getAsset(active1v1Match?.opponentProfile?.avatar || ASSETS.avatarOrange)}
                 alt="Opponent"
                 className={`fighter-avatar ${active1v1Match ? '' : 'mystery-avatar'}`}
               />

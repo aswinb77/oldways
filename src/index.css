@@ -51,12 +51,15 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none;
 }
 
 html, body {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 @supports not (overflow-x: clip) {
@@ -70,6 +73,7 @@ html, body {
   max-width: 100%;
   min-height: 100vh;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 body {
@@ -90,12 +94,42 @@ body {
   background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
 }
 
+/* Prevent blue mobile tap highlight, default focus blue ring, and accidental selection on interactive elements */
+button,
+a,
+input,
+select,
+textarea,
+svg,
+img,
+[role="button"],
+[tabindex] {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none;
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
   border: none;
   background: none;
   user-select: none;
+  -webkit-user-select: none;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible),
+svg:focus,
+img:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+img, svg {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 input, select {

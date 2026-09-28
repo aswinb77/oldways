@@ -11,6 +11,7 @@ import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClo
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
+import { ASSETS } from './utils/assets'
 import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X, Users, AlertTriangle } from 'lucide-react'
 import './App.css'
 
@@ -141,7 +142,7 @@ export default function App() {
         // Direct resume for 1v1 matchmaking - NO friend popup modal!
         const savedRole = getRoomRole(targetCode) || (activeMatch?.isHost ? 'host' : 'guest')
         const roleIsHost = savedRole === 'host'
-        const opponent = activeMatch?.opponentProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' }
+        const opponent = activeMatch?.opponentProfile || { username: 'Challenger', avatar: ASSETS.avatarPurple }
 
         destroyMultiplayer()
         setRoomCode(targetCode)
@@ -297,7 +298,7 @@ export default function App() {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
           setIsOpponentExited(false)
-          setOpponentProfile(remoteProfile || { username: 'Friend', avatar: '/assets/avatar-cyan.png' })
+          setOpponentProfile(remoteProfile || { username: 'Friend', avatar: ASSETS.avatarCyan })
           setIsMpModalOpen(false)
           setIsConnectingGuest(false)
           setInGame(true)
@@ -368,7 +369,7 @@ export default function App() {
           sounds.playMatchFound()
           setIsOpponentDisconnected(false)
           setIsOpponentExited(false)
-          setOpponentProfile(remoteProfile || { username: 'Host Player', avatar: '/assets/avatar-blue.png' })
+          setOpponentProfile(remoteProfile || { username: 'Host Player', avatar: ASSETS.avatarBlue })
           setIsConnectingGuest(false)
           setGuestStatusMsg(null)
           setInGame(true)
@@ -467,7 +468,7 @@ export default function App() {
         setRoomCode(privateRoomCode)
         setIsHost(roleIsHost)
         if (matchGame) setSelectedGame(matchGame)
-        const opponent = oppProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' }
+        const opponent = oppProfile || { username: 'Challenger', avatar: ASSETS.avatarPurple }
         setOpponentProfile(opponent)
         setIsMpModalOpen(false)
         setInGame(true)
@@ -524,7 +525,7 @@ export default function App() {
     setOpponentProfile({
       id: 'challenger_sneha',
       username: 'Sneha_Thrissur',
-      avatar: '/assets/avatar-cyan.png',
+      avatar: ASSETS.avatarCyan,
       badge: 'Diamond',
       points: 810,
     })
@@ -557,7 +558,7 @@ export default function App() {
     setRoomCode(target.roomCode)
     setIsHost(target.isHost)
     if (target.game) setSelectedGame(target.game)
-    setOpponentProfile(target.opponentProfile || { username: 'Challenger', avatar: '/assets/avatar-purple.png' })
+    setOpponentProfile(target.opponentProfile || { username: 'Challenger', avatar: ASSETS.avatarPurple })
     setIsOpponentDisconnected(false)
     setIsMpModalOpen(false)
     isGameOverRef.current = false

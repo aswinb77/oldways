@@ -13,6 +13,7 @@ import {
 } from './poojyamVettuLogic'
 import { sounds } from '../../utils/audio'
 import { saveRoomState, loadRoomState, clearRoomState, clearActive1v1Match, markRoomClosed } from '../../utils/userStore'
+import { ASSETS, getAsset } from '../../utils/assets'
 
 export default function PoojyamVettuBoard({
   mode = 'bot', // 'bot' | 'friend' | 'matchmaking'
@@ -516,7 +517,7 @@ export default function PoojyamVettuBoard({
   }
 
   const p1Name = isHost ? currentUser.username : (opponentProfile?.username || 'Host Player')
-  const p1Avatar = isHost ? currentUser.avatar : (opponentProfile?.avatar || '/assets/avatar-blue.png')
+  const p1Avatar = getAsset(isHost ? currentUser.avatar : (opponentProfile?.avatar || ASSETS.avatarBlue))
 
   const p2Name = mode === 'bot'
     ? `Bot (${botDifficulty.toUpperCase()})`
@@ -524,11 +525,7 @@ export default function PoojyamVettuBoard({
     ? currentUser.username
     : (opponentProfile?.username || 'Challenger')
 
-  const p2Avatar = mode === 'bot'
-    ? '/assets/avatar-orange.png'
-    : !isHost
-    ? currentUser.avatar
-    : (opponentProfile?.avatar || '/assets/avatar-red.png')
+  const p2Avatar = getAsset(mode === 'bot' ? ASSETS.avatarOrange : (!isHost ? currentUser.avatar : (opponentProfile?.avatar || ASSETS.avatarRed)))
 
   return (
     <div className="poojyam-board-wrapper">
@@ -575,7 +572,7 @@ export default function PoojyamVettuBoard({
         <div className={`scoreboard-player p1-box ${curPlayer === 0 ? 'is-active-turn' : 'is-inactive-turn'}`}>
           <div className="player-avatar-badge">
             <img src={p1Avatar} alt={p1Name} className="player-img" />
-            <img src="/assets/vettu-x-red.png" alt="X" className="piece-indicator-icon" />
+            <img src={ASSETS.vettuXRed} alt="X" className="piece-indicator-icon" />
             {curPlayer === 0 && <span className="avatar-pulse-ring ring-red" />}
           </div>
           <div className="player-details">
@@ -623,7 +620,7 @@ export default function PoojyamVettuBoard({
           </div>
           <div className="player-avatar-badge">
             <img src={p2Avatar} alt={p2Name} className="player-img" />
-            <img src="/assets/vettu-x-blue.png" alt="O" className="piece-indicator-icon" />
+            <img src={ASSETS.vettuXBlue} alt="O" className="piece-indicator-icon" />
             {curPlayer === 1 && <span className="avatar-pulse-ring ring-blue" />}
           </div>
         </div>
@@ -689,7 +686,7 @@ export default function PoojyamVettuBoard({
 
                       {/* Tactile Slot Asset */}
                       <image
-                        href={isClaimed || isHovered ? '/assets/vettu-slot-filled.png' : '/assets/vettu-slot-empty.png'}
+                        href={isClaimed || isHovered ? ASSETS.vettuSlotFilled : ASSETS.vettuSlotEmpty}
                         x={x - 17}
                         y={y - 17}
                         width="34"
@@ -701,7 +698,7 @@ export default function PoojyamVettuBoard({
                       {/* Ghost preview of active player on hover */}
                       {!isClaimed && isHovered && isMyTurn && !isOpponentDisconnected && (
                         <image
-                          href={curPlayer === 0 ? '/assets/vettu-x-red.png' : '/assets/vettu-x-blue.png'}
+                          href={curPlayer === 0 ? ASSETS.vettuXRed : ASSETS.vettuXBlue}
                           x={x - 15}
                           y={y - 15}
                           width="30"
@@ -726,7 +723,7 @@ export default function PoojyamVettuBoard({
                   return (
                     <image
                       key={`placed_${r}_${c}`}
-                      href={owner === 0 ? '/assets/vettu-x-red.png' : '/assets/vettu-x-blue.png'}
+                      href={owner === 0 ? ASSETS.vettuXRed : ASSETS.vettuXBlue}
                       x={x - 16}
                       y={y - 16}
                       width="32"
@@ -862,13 +859,13 @@ export default function PoojyamVettuBoard({
 
               <div className="result-scores-box">
                 <div className="score-team">
-                  <img src="/assets/vettu-x-red.png" alt="Red" />
+                  <img src={ASSETS.vettuXRed} alt="Red" />
                   <span className="team-score">{scores[0]} pts</span>
                   <span className="team-name">{p1Name}</span>
                 </div>
                 <div className="score-vs">:</div>
                 <div className="score-team">
-                  <img src="/assets/vettu-x-blue.png" alt="Blue" />
+                  <img src={ASSETS.vettuXBlue} alt="Blue" />
                   <span className="team-score">{scores[1]} pts</span>
                   <span className="team-name">{p2Name}</span>
                 </div>
