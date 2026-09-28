@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { generateRoomCode } from './userStore'
 
 /**
  * Cloud-Backed 1v1 Online Matchmaker powered by Supabase Realtime Presence & Broadcast
@@ -220,8 +221,7 @@ export class SupabaseMatchmaker {
 
     if (isHost) {
       const offerId = `off_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-      const privateRoomCode = `MATCH-${randomSuffix}`
+      const privateRoomCode = generateRoomCode('MATCH')
 
       const expireTimer = setTimeout(() => {
         if (this.pendingOffer && this.pendingOffer.offerId === offerId) {

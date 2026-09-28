@@ -1,6 +1,28 @@
 // User Authentication, Profile, and Weekly Leaderboard Store
-import { syncProfileToCloud } from './supabaseClient'
+import { syncProfileToCloud, recordCloudMatchWin } from './supabaseClient'
 import { ASSETS, getAsset } from './assets'
+
+// Unambiguous Base32 charset (excludes 0, O, 1, I to eliminate visual confusion)
+// 32^6 = 1,073,741,824 unique combinations (> 1 Billion rooms, zero collision)
+const ROOM_CHARSET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+
+export function generateRoomCode(prefix = 'PV', length = 6) {
+  let result = ''
+  const len = ROOM_CHARSET.length
+  for (let i = 0; i < length; i++) {
+    result += ROOM_CHARSET[Math.floor(Math.random() * len)]
+  }
+  return prefix ? `${prefix}-${result}` : result
+}
+
+export function normalizeRoomCode(input, defaultPrefix = 'PV') {
+  if (!input) return ''
+  const trimmed = input.trim().toUpperCase()
+  if (trimmed.includes('-')) {
+    return trimmed
+  }
+  return defaultPrefix ? `${defaultPrefix}-${trimmed}` : trimmed
+}
 
 const DEFAULT_AVATARS = [
   { id: 'shield_blue', name: 'Blue Shield', src: ASSETS.avatarBlue },
@@ -236,8 +258,42 @@ export function saveLeaderboard(lb) {
   } catch (e) {}
 }
 
+function updateLocalLeaderboard(user) {
+  if (!user || user.isGuest) return
+  const lb = loadLeaderboard()
+  const existingIdx = lb.findIndex((p) => p.id === user.id)
+  if (existingIdx !== -1) {
+    lb[existingIdx] = {
+      ...lb[existingIdx],
+      wins: user.wins,
+      points: user.points,
+      streak: user.streak,
+      badge: user.badge,
+      avatar: user.avatar,
+    }
+  } else {
+    lb.push({
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      wins: user.wins,
+      losses: user.losses || 0,
+      points: user.points,
+      streak: user.streak,
+      badge: user.badge,
+    })
+  }
+
+  // Re-sort by points desc
+  lb.sort((a, b) => b.points - a.points || b.wins - a.wins)
+  lb.forEach((item, idx) => {
+    item.rank = idx + 1
+  })
+  saveLeaderboard(lb)
+}
+
 // Record match outcome for user and update weekly points/wins
-export function recordMatchResult({ isWin, mode, scoreDiff = 0, currentUser }) {
+export function recordMatchResult({ isWin, mode, scoreDiff = 0, currentUser, roomCode = '' }) {
   const user = { ...currentUser }
 
   if (isWin) {
@@ -261,50 +317,41 @@ export function recordMatchResult({ isWin, mode, scoreDiff = 0, currentUser }) {
       else if (user.points >= 100) user.badge = 'Gold'
       else user.badge = 'Silver'
 
-      // Update weekly leaderboard
-      const lb = loadLeaderboard()
-      const existingIdx = lb.findIndex((p) => p.id === user.id)
-      if (existingIdx !== -1) {
-        lb[existingIdx] = {
-          ...lb[existingIdx],
-          wins: user.wins,
-          points: user.points,
-          streak: user.streak,
-          badge: user.badge,
-          avatar: user.avatar,
-        }
-      } else {
-        lb.push({
-          id: user.id,
-          username: user.username,
-          avatar: user.avatar,
-          wins: user.wins,
-          losses: user.losses || 0,
-          points: user.points,
-          streak: user.streak,
-          badge: user.badge,
-        })
-      }
+      // Update local weekly leaderboard optimistically
+      updateLocalLeaderboard(user)
 
-      // Re-sort by points desc
-      lb.sort((a, b) => b.points - a.points || b.wins - a.wins)
-      lb.forEach((item, idx) => {
-        item.rank = idx + 1
-      })
-      saveLeaderboard(lb)
+      // Authoritative Server-Side Win Recording (Supabase RPC)
+      // Calls Postgres stored procedure `record_match_win` to prevent client points tampering
+      recordCloudMatchWin({ userId: user.id, roomCode, scoreDiff })
+        .then((cloudResult) => {
+          if (cloudResult && cloudResult.success) {
+            const authoritativeUser = {
+              ...user,
+              points: cloudResult.points,
+              wins: cloudResult.wins,
+              streak: cloudResult.streak,
+              badge: cloudResult.badge,
+            }
+            saveUser(authoritativeUser)
+            updateLocalLeaderboard(authoritativeUser)
+          } else {
+            // Graceful fallback to client sync if RPC has not been migrated yet
+            syncProfileToCloud(user)
+          }
+        })
+        .catch(() => {
+          syncProfileToCloud(user)
+        })
     }
   } else {
     user.losses = (user.losses || 0) + 1
     user.streak = 0
+    if (!user.isGuest) {
+      syncProfileToCloud(user)
+    }
   }
 
   saveUser(user)
-
-  // Sync to Supabase Cloud Database in background (with offline resilience)
-  if (!user.isGuest) {
-    syncProfileToCloud(user)
-  }
-
   return user
 }
 

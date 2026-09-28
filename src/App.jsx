@@ -7,7 +7,7 @@ import MultiplayerModal from './components/MultiplayerModal'
 import JoinRoomModal from './components/JoinRoomModal'
 import PoojyamVettuBoard from './games/poojyamVettu/PoojyamVettuBoard'
 import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
-import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame, saveActive1v1Match, getActive1v1Match, clearActive1v1Match } from './utils/userStore'
+import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame, saveActive1v1Match, getActive1v1Match, clearActive1v1Match, generateRoomCode, normalizeRoomCode } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
 import { sounds } from './utils/audio'
@@ -402,7 +402,7 @@ export default function App() {
   // Create 1v1 Friend Room (Host)
   const handleCreateFriendRoom = () => {
     destroyMultiplayer()
-    const code = `PV-${Math.floor(1000 + Math.random() * 9000)}`
+    const code = generateRoomCode('PV')
     setRoomCode(code)
     setIsHost(true)
     setGameMode('friend')
@@ -423,7 +423,8 @@ export default function App() {
 
   // Triggered when friend enters room code from lobby input
   const handleJoinFriendRoomFromInput = (code) => {
-    setPendingJoinRoomCode(code)
+    const cleanCode = normalizeRoomCode(code, 'PV')
+    setPendingJoinRoomCode(cleanCode)
     setIsJoinRoomModalOpen(true)
   }
 
@@ -613,6 +614,7 @@ export default function App() {
       mode: 'matchmaking',
       scoreDiff: -10,
       currentUser: user,
+      roomCode: active1v1Match?.roomCode || roomCode,
     })
     setUser(updated)
     clearActive1v1Match()
@@ -643,6 +645,7 @@ export default function App() {
       mode: gameMode,
       scoreDiff,
       currentUser: user,
+      roomCode,
     })
     setUser(updated)
   }

@@ -280,7 +280,7 @@ export default function Lobby({
                 <input
                   type="text"
                   className="creamy-input arcade-code-input"
-                  placeholder="PV-XXXX"
+                  placeholder="e.g. PV-K9X2P4"
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value)}
                   autoFocus

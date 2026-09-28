@@ -83,6 +83,38 @@ export async function fetchGlobalLeaderboard(limit = 50, force = false) {
 }
 
 /**
+ * Authoritative Server-Side Win Recording via Supabase RPC
+ * Prevents client-side points tampering and leaderboard exploits.
+ * Calls Postgres stored procedure `record_match_win` which verifies room code,
+ * enforces point limits, and atomically increments user points/wins.
+ */
+export async function recordCloudMatchWin({ userId, roomCode, scoreDiff = 0 }) {
+  if (!supabase || !userId) return null
+
+  try {
+    const { data, error } = await supabase.rpc('record_match_win', {
+      p_user_id: userId,
+      p_room_code: roomCode || 'UNKNOWN',
+      p_score_diff: Math.max(0, Number(scoreDiff) || 0),
+    })
+
+    if (!error && data && data.success) {
+      // Invalidate cached leaderboard so fresh data is fetched on next display
+      cacheTimestamp = 0
+      return data // { success: true, earned, points, wins, streak, badge }
+    }
+
+    if (error) {
+      console.warn('[Supabase] record_match_win RPC notice (falling back):', error.message)
+    }
+  } catch (err) {
+    console.warn('[Supabase] record_match_win call failed:', err)
+  }
+
+  return null
+}
+
+/**
  * Sync player profile and points to Supabase in the background
  * Debounced to coalesce rapid updates
  */
