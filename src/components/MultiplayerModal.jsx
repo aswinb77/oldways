@@ -10,6 +10,7 @@ export default function MultiplayerModal({
   selectedGame = 'poojyam',
   onStartSimulatedMatch,
   queueStatus,
+  onlineCount = 1,
 }) {
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
@@ -156,7 +157,7 @@ export default function MultiplayerModal({
                 <span className="m-lbl">Game Mode</span>
               </div>
               <div className="m-stat">
-                <span className="m-val live-ping-val">Live</span>
+                <span className="m-val live-ping-val">{onlineCount} Online</span>
                 <span className="m-lbl">Cloud Pool</span>
               </div>
             </div>

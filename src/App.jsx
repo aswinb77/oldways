@@ -11,6 +11,7 @@ import QuickVettuBoard from './games/quickVettu/QuickVettuBoard'
 import { loadUser, recordMatchResult, loadRoomState, clearRoomState, markRoomClosed, isRoomClosed, saveRoomRole, getRoomRole, saveRoomGame, getRoomGame, saveActive1v1Match, getActive1v1Match, clearActive1v1Match, generateRoomCode, normalizeRoomCode } from './utils/userStore'
 import { MultiplayerRoom } from './utils/multiplayer'
 import { SupabaseMatchmaker } from './utils/supabaseMatchmaker'
+import { subscribeToOnlinePresence } from './utils/supabaseClient'
 import { sounds } from './utils/audio'
 import { ASSETS } from './utils/assets'
 import { ArrowLeft, Sparkles, Loader2, DoorClosed, Info, X, Users, AlertTriangle } from 'lucide-react'
@@ -23,6 +24,7 @@ export default function App() {
   const [botDifficulty, setBotDifficulty] = useState('insane')
   const [inGame, setInGame] = useState(false)
   const [showConnectTips, setShowConnectTips] = useState(false)
+  const [onlineCount, setOnlineCount] = useState(1)
 
   // Multiplayer state
   const [roomCode, setRoomCode] = useState('')
@@ -66,6 +68,14 @@ export default function App() {
     }, 1500)
     return () => clearInterval(interval)
   }, [active1v1Match])
+
+  // Live 1v1 online players presence subscription
+  useEffect(() => {
+    const unsubscribe = subscribeToOnlinePresence(user?.id, (count) => {
+      setOnlineCount(count)
+    })
+    return () => unsubscribe()
+  }, [user?.id])
 
   // Clean up multiplayer room when leaving game
   const destroyMultiplayer = () => {
@@ -868,6 +878,7 @@ export default function App() {
                 onAbandon1v1Match={handleAbandon1v1Match}
                 user={user}
                 onOpenAuth={() => setIsAuthOpen(true)}
+                onlineCount={onlineCount}
               />
             )}
           </>
@@ -899,6 +910,7 @@ export default function App() {
         selectedGame={selectedGame}
         queueStatus={queueStatus}
         onStartSimulatedMatch={handleStartSimulatedMatch}
+        onlineCount={onlineCount}
       />
 
       {/* Friend Join Name & Avatar Modal */}

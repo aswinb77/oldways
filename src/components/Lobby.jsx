@@ -26,6 +26,7 @@ export default function Lobby({
   onAbandon1v1Match,
   user,
   onOpenAuth,
+  onlineCount = 1,
 }) {
   const [selectedBotDiff, setSelectedBotDiff] = useState('insane')
   const [joinCodeInput, setJoinCodeInput] = useState('')
@@ -130,6 +131,11 @@ export default function Lobby({
             >
               <Info size={13} />
             </button>
+          </div>
+
+          <div className="online-presence-badge" title="Players currently online in 1v1 Arena">
+            <span className="live-dot" />
+            <span className="online-count-text">{onlineCount} Online</span>
           </div>
         </div>
 

@@ -369,7 +369,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .single-stakes-pill {
@@ -386,12 +388,32 @@
   border-radius: 999px;
 }
 
+.online-presence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #15803D;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
 .live-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: #16A34A;
   border-radius: 50%;
   animation: pulseGlow 1.5s infinite;
+  box-shadow: 0 0 4px rgba(22, 163, 74, 0.4);
+}
+
+.online-count-text {
+  line-height: 1;
 }
 
 /* 1v1 Minimal Versus Stage */

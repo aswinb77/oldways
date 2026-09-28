@@ -213,3 +213,61 @@ export function subscribeToLeaderboard(onUpdate) {
     return () => {}
   }
 }
+
+/**
+ * Track and subscribe to global online player presence
+ * Lightweight presence channel specifically for the live 1v1 online count
+ */
+export function subscribeToOnlinePresence(userId, onCountChange) {
+  if (!supabase) {
+    onCountChange && onCountChange(1)
+    return () => {}
+  }
+
+  const myKey = userId || `anon_${Math.random().toString(36).substring(2, 9)}`
+  let channel = null
+
+  try {
+    channel = supabase.channel('pv_online_pool', {
+      config: {
+        presence: { key: myKey },
+      },
+    })
+
+    const updateCount = () => {
+      try {
+        const state = channel.presenceState()
+        const count = Object.keys(state).length
+        onCountChange && onCountChange(Math.max(1, count))
+      } catch (e) {
+        onCountChange && onCountChange(1)
+      }
+    }
+
+    channel
+      .on('presence', { event: 'sync' }, updateCount)
+      .on('presence', { event: 'join' }, updateCount)
+      .on('presence', { event: 'leave' }, updateCount)
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          try {
+            await channel.track({ t: Date.now() })
+            updateCount()
+          } catch (e) {}
+        }
+      })
+  } catch (err) {
+    console.warn('[Supabase] Online presence error:', err)
+    onCountChange && onCountChange(1)
+  }
+
+  return () => {
+    try {
+      if (channel) {
+        channel.untrack()
+        supabase.removeChannel(channel)
+      }
+    } catch (e) {}
+  }
+}
+
