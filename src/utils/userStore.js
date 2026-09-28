@@ -50,16 +50,42 @@ export function loadUser() {
       } else {
         parsed.avatar = getAsset(parsed.avatar)
       }
-      // Sanitize legacy 120 points from old login bug: points only come from real online wins
-      if ((!parsed.wins || parsed.wins === 0) && parsed.points > 0) {
+
+      // One-time automatic reset to purge previously inflated stats (wins, points, streak, losses)
+      const STATS_RESET_KEY = 'pv_stats_reset_clean_v1'
+      if (!localStorage.getItem(STATS_RESET_KEY)) {
         parsed.points = 0
-        parsed.badge = 'Bronze'
+        parsed.wins = 0
+        parsed.losses = 0
+        parsed.streak = 0
+        parsed.badge = 'Novice'
         localStorage.setItem('pv_user_profile', JSON.stringify(parsed))
+        localStorage.removeItem('pv_leaderboard')
+        localStorage.setItem(STATS_RESET_KEY, 'true')
+        if (!parsed.isGuest) {
+          syncProfileToCloud(parsed)
+        }
       }
+
       return parsed
     }
   } catch (e) {}
   return getGuestUser()
+}
+
+export function resetAllUserStats() {
+  const current = loadUser()
+  current.points = 0
+  current.wins = 0
+  current.losses = 0
+  current.streak = 0
+  current.badge = 'Novice'
+  saveUser(current)
+  localStorage.removeItem('pv_leaderboard')
+  if (!current.isGuest) {
+    syncProfileToCloud(current)
+  }
+  return current
 }
 
 export function getGuestUser() {

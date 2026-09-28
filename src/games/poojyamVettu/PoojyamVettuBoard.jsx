@@ -59,6 +59,55 @@ export default function PoojyamVettuBoard({
   const [disconnectCountdown, setDisconnectCountdown] = useState(20)
   const [turnSecondsLeft, setTurnSecondsLeft] = useState(35)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+  const isGameOverHandledRef = useRef(false)
+
+  // Clean up any active confetti on unmount / navigation to Lobby
+  useEffect(() => {
+    return () => {
+      try {
+        confetti.reset()
+      } catch (e) {}
+    }
+  }, [])
+
+  // Tasteful, single-burst victory confetti (clears previous particles to prevent pile-up)
+  const triggerVictoryEffects = useCallback(() => {
+    try {
+      confetti.reset()
+      confetti({
+        particleCount: 75,
+        spread: 70,
+        origin: { y: 0.6 },
+        ticks: 180,
+        disableForReducedMotion: true,
+      })
+    } catch (e) {}
+  }, [])
+
+  // Strictly single-fire Game Over handler
+  const triggerGameOver = useCallback(({ isWin, scoreDiff = 0, result }) => {
+    if (isGameOverHandledRef.current) return
+    isGameOverHandledRef.current = true
+
+    setGameResult(result)
+    if (roomCode) {
+      clearRoomState(roomCode)
+      markRoomClosed(roomCode)
+    }
+    clearActive1v1Match()
+    onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
+
+    if (isWin) {
+      sounds.playWin()
+      triggerVictoryEffects()
+    } else {
+      sounds.playOver()
+    }
+
+    if (onGameOver) {
+      onGameOver({ isWin, scoreDiff })
+    }
+  }, [roomCode, onSendAction, onGameOver, triggerVictoryEffects])
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -72,6 +121,7 @@ export default function PoojyamVettuBoard({
           if (prev === null) return null
           if (prev <= 1) {
             clearInterval(timer)
+            try { confetti.reset() } catch (e) {}
             onExitToLobby && onExitToLobby()
             return 0
           }
@@ -127,16 +177,7 @@ export default function PoojyamVettuBoard({
               type: 'win',
               subtitle: 'Opponent disconnected from the duel.',
             }
-            setGameResult(result)
-            if (roomCode) {
-              clearRoomState(roomCode)
-              markRoomClosed(roomCode)
-            }
-            clearActive1v1Match()
-            sounds.playWin()
-            confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
-            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
-            onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
+            triggerGameOver({ isWin: true, scoreDiff: 1, result })
             return 0
           }
           return prev - 1
@@ -167,10 +208,7 @@ export default function PoojyamVettuBoard({
               type: 'loss',
               subtitle: 'You ran out of time on your turn.',
             }
-            setGameResult(result)
-            if (roomCode) clearRoomState(roomCode)
-            sounds.playOver()
-            onGameOver && onGameOver({ isWin: false, scoreDiff: 1 })
+            triggerGameOver({ isWin: false, scoreDiff: 1, result })
           } else {
             const result = {
               winner: myPlayerIndex,
@@ -178,11 +216,7 @@ export default function PoojyamVettuBoard({
               type: 'win',
               subtitle: 'Opponent was inactive on their turn.',
             }
-            setGameResult(result)
-            if (roomCode) clearRoomState(roomCode)
-            sounds.playWin()
-            confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
-            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+            triggerGameOver({ isWin: true, scoreDiff: 1, result })
           }
           return 0
         }
@@ -311,24 +345,11 @@ export default function PoojyamVettuBoard({
         }
       }
 
-      setGameResult(result)
-      if (roomCode) {
-        clearRoomState(roomCode)
-        markRoomClosed(roomCode)
-      }
-      clearActive1v1Match()
-      onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
-
-      if (result.winner === myPlayerIndex) {
-        sounds.playWin()
-        confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
-        onGameOver && onGameOver({ isWin: true, scoreDiff: Math.abs(scores[0] - scores[1]) })
-      } else {
-        sounds.playOver()
-        onGameOver && onGameOver({ isWin: false, scoreDiff: Math.abs(scores[0] - scores[1]) })
-      }
+      const isWin = result.winner === myPlayerIndex
+      const diff = Math.abs(scores[0] - scores[1])
+      triggerGameOver({ isWin, scoreDiff: diff, result })
     }
-  }, [placedCount, scores, gameResult, myPlayerIndex, onGameOver, roomCode])
+  }, [placedCount, scores, gameResult, myPlayerIndex, triggerGameOver])
 
   // Handle human click on a dot
   const handleDotClick = (r, c) => {
@@ -408,11 +429,7 @@ export default function PoojyamVettuBoard({
         type: 'win',
         subtitle: `${lastRemoteAction.sender || 'Opponent'} left the match. You win by forfeit!`,
       }
-      setGameResult(result)
-      if (roomCode) clearRoomState(roomCode)
-      sounds.playWin()
-      confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
-      onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+      triggerGameOver({ isWin: true, scoreDiff: 1, result })
     }
   }, [lastRemoteAction, triggerTauntDisplay, opponentProfile, myPlayerIndex, roomCode, onGameOver])
 
@@ -439,6 +456,8 @@ export default function PoojyamVettuBoard({
 
   // Reset Game
   const resetGame = (broadcast = true) => {
+    isGameOverHandledRef.current = false
+    try { confetti.reset() } catch (e) {}
     setGrid(createEmptyGrid())
     setCurPlayer(0)
     setScores([0, 0])

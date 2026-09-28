@@ -45,6 +45,55 @@ export default function QuickVettuBoard({
   const [disconnectCountdown, setDisconnectCountdown] = useState(20)
   const [turnSecondsLeft, setTurnSecondsLeft] = useState(35)
   const prevDisconnectedRef = useRef(isOpponentDisconnected)
+  const isGameOverHandledRef = useRef(false)
+
+  // Clean up any active confetti on unmount / navigation to Lobby
+  useEffect(() => {
+    return () => {
+      try {
+        confetti.reset()
+      } catch (e) {}
+    }
+  }, [])
+
+  // Tasteful, single-burst victory confetti (clears previous particles to prevent pile-up)
+  const triggerVictoryEffects = useCallback(() => {
+    try {
+      confetti.reset()
+      confetti({
+        particleCount: 75,
+        spread: 70,
+        origin: { y: 0.6 },
+        ticks: 180,
+        disableForReducedMotion: true,
+      })
+    } catch (e) {}
+  }, [])
+
+  // Strictly single-fire Game Over handler
+  const triggerGameOver = useCallback(({ isWin, scoreDiff = 0, result }) => {
+    if (isGameOverHandledRef.current) return
+    isGameOverHandledRef.current = true
+
+    setGameResult(result)
+    if (roomCode) {
+      clearRoomState(roomCode)
+      markRoomClosed(roomCode)
+    }
+    clearActive1v1Match()
+    onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
+
+    if (isWin) {
+      sounds.playWin()
+      triggerVictoryEffects()
+    } else {
+      sounds.playOver()
+    }
+
+    if (onGameOver) {
+      onGameOver({ isWin, scoreDiff })
+    }
+  }, [roomCode, onSendAction, onGameOver, triggerVictoryEffects])
 
   const myPlayerIndex = mode === 'bot' ? 0 : isHost ? 0 : 1
   const isMyTurn = curPlayer === myPlayerIndex
@@ -58,6 +107,7 @@ export default function QuickVettuBoard({
           if (prev === null) return null
           if (prev <= 1) {
             clearInterval(timer)
+            try { confetti.reset() } catch (e) {}
             onExitToLobby && onExitToLobby()
             return 0
           }
@@ -113,16 +163,7 @@ export default function QuickVettuBoard({
               type: 'win',
               subtitle: 'Opponent disconnected from the duel.',
             }
-            setGameResult(result)
-            if (roomCode) {
-              clearRoomState(roomCode)
-              markRoomClosed(roomCode)
-            }
-            clearActive1v1Match()
-            sounds.playWin()
-            confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } })
-            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
-            onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
+            triggerGameOver({ isWin: true, scoreDiff: 1, result })
             return 0
           }
           return prev - 1
@@ -153,10 +194,7 @@ export default function QuickVettuBoard({
               type: 'loss',
               subtitle: 'You ran out of time on your turn.',
             }
-            setGameResult(result)
-            if (roomCode) clearRoomState(roomCode)
-            sounds.playOver()
-            onGameOver && onGameOver({ isWin: false, scoreDiff: 1 })
+            triggerGameOver({ isWin: false, scoreDiff: 1, result })
           } else {
             const result = {
               winner: myPlayerIndex,
@@ -164,11 +202,7 @@ export default function QuickVettuBoard({
               type: 'win',
               subtitle: 'Opponent was inactive on their turn.',
             }
-            setGameResult(result)
-            if (roomCode) clearRoomState(roomCode)
-            sounds.playWin()
-            confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } })
-            onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+            triggerGameOver({ isWin: true, scoreDiff: 1, result })
           }
           return 0
         }
@@ -227,38 +261,25 @@ export default function QuickVettuBoard({
     const res = checkQuickWinner(nextBoard)
 
     if (res) {
-      if (roomCode) {
-        clearRoomState(roomCode)
-        markRoomClosed(roomCode)
-      }
-      clearActive1v1Match()
-      onSendAction && onSendAction({ type: 'MATCH_ENDED', roomCode })
       if (res.winner === 'tie') {
-        sounds.playOver()
-        setGameResult({ winner: 'tie', title: '🤝 Tie Game!' })
-        onGameOver && onGameOver({ isWin: false, scoreDiff: 0 })
+        const result = { winner: 'tie', title: '🤝 Tie Game!' }
+        triggerGameOver({ isWin: false, scoreDiff: 0, result })
       } else {
         sounds.playCut()
         setWinningLine(res.line)
         const won = res.winner === myPlayerIndex
-        if (won) {
-          sounds.playWin()
-          confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } })
-        } else {
-          sounds.playOver()
-        }
-        setGameResult({
+        const result = {
           winner: res.winner,
           title: won ? '🏆 You Won!' : 'Defeat! Opponent Won',
           type: won ? 'win' : 'loss',
-        })
-        onGameOver && onGameOver({ isWin: won, scoreDiff: 20 })
+        }
+        triggerGameOver({ isWin: won, scoreDiff: 20, result })
       }
       return
     }
 
     setCurPlayer(player === 0 ? 1 : 0)
-  }, [board, myPlayerIndex, onGameOver, roomCode])
+  }, [board, myPlayerIndex, triggerGameOver])
 
   const handleCellClick = (idx) => {
     if (board[idx] !== null || gameResult || !isMyTurn || isOpponentDisconnected) return
@@ -319,11 +340,7 @@ export default function QuickVettuBoard({
         type: 'win',
         subtitle: `${lastRemoteAction.sender || 'Opponent'} left the match. You win by forfeit!`,
       }
-      setGameResult(result)
-      if (roomCode) clearRoomState(roomCode)
-      sounds.playWin()
-      confetti({ particleCount: 110, spread: 80, origin: { y: 0.6 } })
-      onGameOver && onGameOver({ isWin: true, scoreDiff: 1 })
+      triggerGameOver({ isWin: true, scoreDiff: 1, result })
     }
   }, [lastRemoteAction, triggerTauntDisplay, opponentProfile, myPlayerIndex, roomCode, onGameOver])
 
@@ -344,6 +361,8 @@ export default function QuickVettuBoard({
   }, [curPlayer, mode, board, gameResult, botDifficulty, executeMove])
 
   const resetGame = (broadcast = true) => {
+    isGameOverHandledRef.current = false
+    try { confetti.reset() } catch (e) {}
     setBoard(Array(9).fill(null))
     setCurPlayer(0)
     setWinningLine(null)

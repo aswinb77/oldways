@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import confetti from 'canvas-confetti'
 import Navbar from './components/Navbar'
 import Lobby from './components/Lobby'
 import Leaderboard from './components/Leaderboard'
@@ -391,6 +392,8 @@ export default function App() {
   // Start Bot Game
   const handleStartBotGame = (diff) => {
     destroyMultiplayer()
+    isGameOverRef.current = false
+    try { confetti.reset() } catch (e) {}
     setBotDifficulty(diff)
     setGameMode('bot')
     setIsHost(true)
@@ -402,6 +405,8 @@ export default function App() {
   // Create 1v1 Friend Room (Host)
   const handleCreateFriendRoom = () => {
     destroyMultiplayer()
+    isGameOverRef.current = false
+    try { confetti.reset() } catch (e) {}
     const code = generateRoomCode('PV')
     setRoomCode(code)
     setIsHost(true)
@@ -430,6 +435,8 @@ export default function App() {
 
   // Friend confirms their Name & Avatar
   const handleFriendJoinConfirmed = (friendUser) => {
+    isGameOverRef.current = false
+    try { confetti.reset() } catch (e) {}
     setUser(friendUser)
     setIsJoinRoomModalOpen(false)
     if (pendingJoinRoomCode) {
@@ -465,6 +472,8 @@ export default function App() {
         setQueueStatus(status)
       },
       onMatchFound: ({ roomCode: privateRoomCode, isHost: roleIsHost, opponentProfile: oppProfile, selectedGame: matchGame }) => {
+        isGameOverRef.current = false
+        try { confetti.reset() } catch (e) {}
         sounds.playMatchFound()
         setRoomCode(privateRoomCode)
         setIsHost(roleIsHost)
@@ -522,6 +531,8 @@ export default function App() {
   // Fallback: Duel Simulated Ranked Challenger
   const handleStartSimulatedMatch = () => {
     destroyMultiplayer()
+    isGameOverRef.current = false
+    try { confetti.reset() } catch (e) {}
     setIsMpModalOpen(false)
     setOpponentProfile({
       id: 'challenger_sneha',
@@ -631,9 +642,11 @@ export default function App() {
     }
   }
 
-  // Game Over outcome tracking
-  const handleGameOver = ({ isWin, scoreDiff }) => {
+  // Game Over outcome tracking (guaranteed strictly single-fire)
+  const handleGameOver = useCallback(({ isWin, scoreDiff }) => {
+    if (isGameOverRef.current) return
     isGameOverRef.current = true
+
     if (roomCode) {
       clearRoomState(roomCode)
     }
@@ -648,7 +661,7 @@ export default function App() {
       roomCode,
     })
     setUser(updated)
-  }
+  }, [gameMode, roomCode, user])
 
   // Intercept in-game back click: prompt for forfeit confirmation if match is still in progress
   const handleBackArrowClick = () => {
@@ -678,6 +691,7 @@ export default function App() {
     setRoomCode('')
     setIsOpponentDisconnected(false)
     setIsOpponentExited(false)
+    try { confetti.reset() } catch (e) {}
     setInGame(false)
     if (typeof window !== 'undefined' && window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -686,6 +700,7 @@ export default function App() {
 
   // Return to Lobby: CLOSE the room ONLY if Host leaves; if Guest leaves, keep room open for reconnect
   const handleExitToLobby = () => {
+    try { confetti.reset() } catch (e) {}
     if (roomCode) {
       if (isHost) {
         // Host left: Close the room completely and invalidate link
